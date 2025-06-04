@@ -9,80 +9,47 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
-
+    let availableSongs = ["Abdu\'l-Baha", "Baha\'u\'llah", "Blessed is the Spot EN", "Forgive Each Other", "Fort Tabarsi", "Fruits of One Tree", "Give Us Peace", "God is Sufficient Unto Me Elaine", "Good Neighbors Come in All Colors", "Hawaiian Unity Song HI", "Healing Prayer", "I am O MY God", "I Have Found Baha\'u\'llah", "I Love You", "Let Thy Heart be Dilated", "O Lord I Adore Thee", "Prayer for Youth", "Rose Garden Prayer", "Seven Martyrs of Tehran", "Siyahamb\'e", "Strive", "That is How Baha\'is Should Be", "We Shall Not Fail", "What Mankind Has to Learn"]
+    @State private var selectedSong = "Fort Tabarsi"
+    
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
+        ZStack {
+            PDFViewer(forSong: selectedSong)
+            VStack {
+                HStack {
+                    Menu {
+                        ForEach(availableSongs, id: \.self) { song in
+                            Button(song) {
+                                selectedSong = song
+                            }
+                        }
                     } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+                        HStack {
+                            Text(selectedSong)
+                                .font(.headline)
+                            Image(systemName: "chevron.down")
+                                .font(.subheadline)
+                        }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 8)
+                            .background(.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(.primary, lineWidth: 1)
+                            )
+                            .padding()
+                        
                     }
+                    Spacer()
                 }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                Spacer()
             }
         }
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
-
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView()
 }

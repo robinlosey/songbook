@@ -26,8 +26,12 @@ struct PDFViewer: UIViewRepresentable {
         return pdfView
     }
     
-    func updateUIView(_ uiView: UIViewType, context: Context) {
-        // unnecessary
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard let url = Bundle.main.url(forResource: forSong, withExtension: "pdf"),
+              let pdfView = uiView as? PDFView else {
+            return
+        }
+        pdfView.document = PDFDocument(url: url)
     }
 }
 

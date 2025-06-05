@@ -57,25 +57,21 @@ struct SongRowView: View {
 
 struct SongListView: View {
     @StateObject var viewModel: SongListViewModel
-    var previewMode: Bool = false
-
     var body: some View {
         NavigationStack {
             List {
                 ForEach(viewModel.songs) { song in
                     NavigationLink {
-                        if previewMode {
-                            SongDetailView(forSong: song)
-                        } else {
-                            if let filename = song.filename, !filename.isEmpty {
-                                PDFViewer(forSong: filename)
-                            } else {
-                                Text("No PDF available for this song.")
+                        SongView(song: song) {
+                            withAnimation {
+                                viewModel.toggleFavorite(for: song)
                             }
                         }
                     } label: {
                         SongRowView(song: song) {
-                            viewModel.toggleFavorite(for: song)
+                            withAnimation {
+                                viewModel.toggleFavorite(for: song)
+                            }
                         }
                     }
                 }

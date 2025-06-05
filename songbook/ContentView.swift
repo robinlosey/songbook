@@ -15,7 +15,7 @@ struct ContentView: View {
     @StateObject var songListViewModel: SongListViewModel
 
     var body: some View {
-        SongListView(viewModel: songListViewModel, previewMode: false)
+        SongListView(viewModel: songListViewModel)
     }
 }
 

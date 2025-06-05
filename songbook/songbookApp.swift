@@ -9,12 +9,17 @@ import SwiftUI
 
 @main
 struct songbookApp: App {
-    let persistenceController = PersistenceController.shared
+    let dataManager = DataManager.shared
+
+    init() {
+        // Load songs from CSV when the app initializes, if they haven't been loaded already.
+        dataManager.loadSongsFromCSVIfNeeded()
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            ContentView(songListViewModel: SongListViewModel())
+                .environment(\.managedObjectContext, dataManager.container.viewContext)
         }
     }
 }

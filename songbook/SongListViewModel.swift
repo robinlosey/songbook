@@ -34,16 +34,13 @@ class SongListViewModel: ObservableObject {
         }
     }
     
-    // Example function to delete a song, can be expanded
-    func deleteSong(at offsets: IndexSet) {
-        offsets.map { songs[$0] }.forEach(viewContext.delete)
-        
+    func toggleFavorite(for song: Song) {
+        song.isFavorite.toggle()
         do {
             try viewContext.save()
-            fetchSongs() // Refresh the list
+            print("Toggled favorite status for song: \(song.title ?? "Unknown") to \(song.isFavorite)")
         } catch {
-            let nsError = error as NSError
-            print("Error saving context after deleting song: \(nsError), \(nsError.userInfo)")
+            print("Error saving favorite status: \(error.localizedDescription)")
         }
     }
 }

@@ -30,6 +30,31 @@ struct SongDetailView: View {
     }
 }
 
+struct SongRowView: View {
+    @ObservedObject var song: Song
+    var toggleFavoriteAction: () -> Void
+    
+    var body: some View {
+        HStack {
+            Button(action: toggleFavoriteAction) {
+                Image(systemName: song.isFavorite ? "star.fill" : "star")
+                    .foregroundColor(song.isFavorite ? .yellow : .gray)
+            }
+            .buttonStyle(.plain)
+            
+            VStack(alignment: .leading) {
+                Text(song.title ?? "Untitled Song")
+                    .font(.headline)
+                Text(song.artist ?? "Unknown Artist")
+                    .font(.subheadline)
+                Text(song.first_line ?? "")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+}
+
 struct SongListView: View {
     @StateObject var viewModel: SongListViewModel
     var previewMode: Bool = false
@@ -49,21 +74,8 @@ struct SongListView: View {
                             }
                         }
                     } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(song.title ?? "Untitled Song")
-                                    .font(.headline)
-                                Text(song.artist ?? "Unknown Artist")
-                                    .font(.subheadline)
-                                Text(song.first_line ?? "")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                            Spacer()
-                            if song.isFavorite {
-                                Image(systemName: "heart.fill")
-                                    .foregroundColor(.red)
-                            }
+                        SongRowView(song: song) {
+                            viewModel.toggleFavorite(for: song)
                         }
                     }
                 }

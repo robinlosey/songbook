@@ -9,9 +9,6 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
-    // Initialize the ViewModel directly or receive it from an environment object
-    // depending on how you manage dependencies in your app.
-    // For simplicity here, we create it directly.
     @StateObject var songListViewModel: SongListViewModel
 
     var body: some View {

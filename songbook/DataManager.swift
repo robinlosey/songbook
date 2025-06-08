@@ -48,6 +48,25 @@ struct DataManager {
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
+    private func findOrCreateCategory(withName name: String, in context: NSManagedObjectContext) -> Category {
+        let request: NSFetchRequest<Category> = Category.fetchRequest()
+        request.predicate = NSPredicate(format: "name == %@", name)
+        request.fetchLimit = 1
+
+        do {
+            if let category = try context.fetch(request).first {
+                return category
+            }
+        } catch {
+            // Log the error but continue to create a new category, as that's the recovery path.
+            print("Could not fetch Category: \(error.localizedDescription). Creating a new one.")
+        }
+
+        let newCategory = Category(context: context)
+        newCategory.name = name
+        return newCategory
+    }
+
     private func parseCSV(line: String) -> [String] {
         var fields = [String]()
         var buffer = ""
@@ -113,8 +132,8 @@ struct DataManager {
                 continue // skip empty lines
             }
             let cols = parseCSV(line: line)
-            guard cols.count >= 4 else { // Ensure at least title, artist, first_line, filename
-                print("Skipping malformed line (expected at least 4 columns, got \(cols.count)): \(line)")
+            guard cols.count >= 6 else { // Ensure at least title, artist, first_line, filename, ref, and indices
+                print("Skipping malformed line (expected at least 6 columns, got \(cols.count)): \(line)")
                 continue
             }
             
@@ -125,7 +144,17 @@ struct DataManager {
             song.filename = cols[3]
             song.isFavorite = false // default to false
 
-            // todo handle categories (column 5 if present, cols[4], and indices from cols[5])
+            // handle categories from 'Indices' column (cols[5])
+            if !cols[5].isEmpty {
+                let categoryNames = cols[5].components(separatedBy: ":")
+                for name in categoryNames {
+                    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedName.isEmpty {
+                        let category = findOrCreateCategory(withName: trimmedName, in: context)
+                        song.addToCategories(category)
+                    }
+                }
+            }
             
             print("Loaded song: \(song.title ?? "Unknown") by \(song.artist ?? "Unknown")")
         }

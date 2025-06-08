@@ -15,15 +15,29 @@ struct DataManager {
     static var preview: DataManager = {
         let result = DataManager(inMemory: true)
         let viewContext = result.container.viewContext
-        // Preview data can be more specific if needed, e.g., loading a few sample songs
-        for i in 0..<5 {
+        
+        // create sample categories (odd and even)
+        let evenCategory = Category(context: viewContext)
+        evenCategory.name = "Even"
+        
+        let oddCategory = Category(context: viewContext)
+        oddCategory.name = "Odd"
+        
+        // make sample songs
+        for i in 0..<10 {
             let newSong = Song(context: viewContext)
             newSong.title = "Sample Song \(i + 1)"
             newSong.artist = "Sample Artist \(i + 1)"
             newSong.first_line = "This is the first line of sample song \(i + 1)."
             newSong.filename = "sample_song_\(i+1)"
             newSong.isFavorite = false
+            if i % 2 == 0 {
+                newSong.addToCategories(evenCategory)
+            } else {
+                newSong.addToCategories(oddCategory)
+            }
         }
+        
         do {
             try viewContext.save()
         } catch {

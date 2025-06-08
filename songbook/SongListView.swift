@@ -2,33 +2,11 @@
 //  SongListView.swift
 //  songbook
 //
-//  Created by Gemini Assistant on 6/6/25.
+//  Created by acemavrick on 6/6/25.
 //
 
 import SwiftUI
 import CoreData
-
-struct SongDetailView: View {
-    var forSong: Song
-    
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(forSong.title ?? "Untitled Song")
-                .font(.title)
-            Text(forSong.artist ?? "Unknown Artist")
-                .font(.headline)
-            Text(forSong.first_line ?? "")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-            Text("Filename: \(forSong.filename ?? "N/A")")
-                .font(.caption)
-            Text("Is Favorite: \(forSong.isFavorite ? "Yes" : "No")")
-                .font(.caption)
-        }
-        .padding()
-        .navigationTitle(forSong.title ?? "Song Details")
-    }
-}
 
 struct SongRowView: View {
     @ObservedObject var song: Song
@@ -76,7 +54,7 @@ struct SongListView: View {
                     }
                 }
             }
-            .navigationTitle("All Songs")
+            .navigationTitle(viewModel.category?.name ?? "All Songs")
         }
     }
 }

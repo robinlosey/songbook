@@ -9,13 +9,13 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
-    @StateObject var songListViewModel: SongListViewModel
-
+    @StateObject var viewModel: CategoryListViewModel
     var body: some View {
-        SongListView(viewModel: songListViewModel)
+        CategoryListView(viewModel: viewModel)
     }
 }
 
 #Preview {
-    ContentView(songListViewModel: SongListViewModel())
+    ContentView(viewModel: PreviewCategoryListViewModel())
+        .environment(\.managedObjectContext, DataManager.preview.container.viewContext)
 }

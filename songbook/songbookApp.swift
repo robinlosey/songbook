@@ -18,7 +18,7 @@ struct songbookApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(songListViewModel: SongListViewModel())
+            ContentView(viewModel: CategoryListViewModel())
                 .environment(\.managedObjectContext, dataManager.container.viewContext)
         }
     }

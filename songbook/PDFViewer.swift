@@ -32,6 +32,7 @@ struct PDFViewer: UIViewRepresentable {
             return
         }
         pdfView.document = PDFDocument(url: url)
+        pdfView.autoScales = true
     }
 }
 

@@ -26,9 +26,9 @@ struct DataManager {
         // make sample songs
         for i in 0..<10 {
             let newSong = Song(context: viewContext)
-            newSong.title = "Sample Song \(i + 1)"
-            newSong.artist = "Sample Artist \(i + 1)"
-            newSong.first_line = "This is the first line of sample song \(i + 1)."
+            newSong.title = "\(i+1) Sample Song"
+            newSong.artist = "\(10-i) Sample Artist"
+            newSong.first_line = "line \(pow(-1, i)). This is the first line of sample song."
             newSong.filename = "sample_song_\(i+1)"
             newSong.isFavorite = false
             if i % 2 == 0 {

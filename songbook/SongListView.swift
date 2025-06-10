@@ -16,7 +16,6 @@ struct SongRowView: View {
         HStack {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
-                    .foregroundColor(song.isFavorite ? .yellow : .gray)
             }
             .buttonStyle(.plain)
             
@@ -38,25 +37,42 @@ struct SongListView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(viewModel.songs) { song in
-                    NavigationLink {
-                        SongView(song: song) {
-                            withAnimation {
-                                viewModel.toggleFavorite(for: song)
-                            }
-                        }
-                    } label: {
-                        SongRowView(song: song) {
-                            withAnimation {
-                                viewModel.toggleFavorite(for: song)
-                            }
-                        }
-                    }
-                }
-            }
+                ForEach(viewModel.sortedSectionKeys, id: \.self) { sectionKey in
+                    Section(header: Text(sectionKey)) {
+                        ForEach(viewModel.sectionedSongs[sectionKey] ?? []) { song in
+                            NavigationLink {
+                                SongView(song: song) {
+                                    withAnimation {
+                                        viewModel.toggleFavorite(for: song)
+                                    }
+                                }
+                            } label: {
+                                SongRowView(song: song) {
+                                    withAnimation {
+                                        viewModel.toggleFavorite(for: song)
+                                    }
+                                }
+                            } // end NavigationLink
+                        } // end ForEach
+                    } // end Section
+                } // end ForEach
+            } // end list
             .navigationTitle(viewModel.category?.name ?? "All Songs")
-        }
-    }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        Text("Sort By:")
+                        Picker(selection: $viewModel.sortBy) {
+                            ForEach(SongListViewModel.SortOption.allCases, id: \.self) { option in
+                                Text(option.rawValue.capitalized).tag(option)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                } // end ToolbarItem
+            }// end toolbar
+        }// end NavigationStack
+    } // end body
 }
 
 #Preview {

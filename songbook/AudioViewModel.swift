@@ -37,6 +37,9 @@ class AudioPlayerViewModel: ObservableObject {
     @Published private(set) var playbackState: PlaybackState = .stopped
     @Published private(set) var currentTime: TimeInterval = 0
     @Published private(set) var duration: TimeInterval = 0
+    var timeLeft: TimeInterval {
+        max(0, duration - currentTime)
+    }
 
     private var player: AVPlayer?
     private var timeObserverToken: Any?
@@ -160,9 +163,10 @@ class AudioPlayerViewModel: ObservableObject {
 
     private func setupObservers(for playerItem: AVPlayerItem) {
         // Observe current time
-        timeObserverToken = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
+        timeObserverToken = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.016, preferredTimescale: 1000), queue: .main) { [weak self] time in
             Task { @MainActor in
-                self?.currentTime = time.seconds
+                let currentTime = time.seconds
+                self?.currentTime = currentTime
             }
         }
 

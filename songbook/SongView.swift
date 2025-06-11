@@ -25,6 +25,7 @@ struct CategoryTag: View {
 }
 
 struct SongView: View {
+    @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
     
@@ -56,8 +57,10 @@ struct SongView: View {
                             Image(systemName: song.isFavorite ? "star.fill" : "star")
                         }
                         
-                        Button(action: {}) {
-                            Image(systemName: "speaker.wave.2.fill")
+                        Button{
+                            audioPlayer.togglePlayPause()
+                        } label: {
+                            Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
                         }
                     }
                     .buttonStyle(.plain)
@@ -80,8 +83,14 @@ struct SongView: View {
                 // to push top bar to the top
                 Spacer()
             }
+        } // end zstack
+        .onAppear {
+            audioPlayer.setup(song: song)
         }
-    }
+        .onDisappear {
+            audioPlayer.stop()
+        }
+    }// end body
 }
 
 #Preview {

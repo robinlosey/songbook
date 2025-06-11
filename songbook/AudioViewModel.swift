@@ -8,6 +8,7 @@
 import Foundation
 import AVFoundation
 import Combine
+import MediaPlayer
 
 @MainActor
 class AudioPlayerViewModel: ObservableObject {
@@ -63,6 +64,7 @@ class AudioPlayerViewModel: ObservableObject {
 
     init() {
         configureAudioSession()
+        setupRemoteTransportControls()
     }
     
     deinit {
@@ -143,12 +145,19 @@ class AudioPlayerViewModel: ObservableObject {
         duration = 0
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
     func seek(to time: TimeInterval) {
         guard let player = player else { return }
         let cmTime = CMTime(seconds: time, preferredTimescale: 600)
-        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero)
+        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            if finished {
+                Task {
+                    await self?.updateNowPlayingInfo()
+                }
+            }
+        }
     }
 
     private func configureAudioSession() {
@@ -176,6 +185,7 @@ class AudioPlayerViewModel: ObservableObject {
             .sink { [weak self] duration in
                 guard duration.isNumeric else { return }
                 self?.duration = duration.seconds
+                self?.updateNowPlayingInfo()
             }
             .store(in: &cancellables)
 
@@ -206,7 +216,50 @@ class AudioPlayerViewModel: ObservableObject {
                 default:
                     break
                 }
+                self.updateNowPlayingInfo()
             }
             .store(in: &cancellables)
+    }
+    
+    private func setupRemoteTransportControls() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        commandCenter.playCommand.addTarget { [weak self] _ in
+            self?.play()
+            return .success
+        }
+
+        commandCenter.pauseCommand.addTarget { [weak self] _ in
+            self?.pause()
+            return .success
+        }
+        
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.togglePlayPause()
+            return .success
+        }
+
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            if let event = event as? MPChangePlaybackPositionCommandEvent {
+                self?.seek(to: event.positionTime)
+                return .success
+            }
+            return .commandFailed
+        }
+    }
+
+    private func updateNowPlayingInfo() {
+        guard let song = currentSong, player != nil else {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+            return
+        }
+
+        var nowPlayingInfo = [String: Any]()
+        nowPlayingInfo[MPMediaItemPropertyTitle] = song.title ?? "Unknown Title"
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0.0
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 }

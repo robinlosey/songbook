@@ -35,14 +35,26 @@ extension TimeInterval {
 // overlay with the song info
 struct AudioInfoOverlay: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
+    @State private var sliderValue: Double = 0
+    @State private var isSeeking = false
     
     var body: some View {
         // simple progressView of progress of the song
         VStack {
             Spacer()
             VStack {
-                ProgressView(value: audioPlayer.currentTime, total: audioPlayer.duration)
-                    .controlSize(.extraLarge)
+                if audioPlayer.duration > 0 {
+                    Slider(
+                        value: $sliderValue,
+                        in: 0...audioPlayer.duration,
+                        onEditingChanged: { editing in
+                            isSeeking = editing
+                            if !editing {
+                                audioPlayer.seek(to: sliderValue)
+                            }
+                        }
+                    )
+                }
                 HStack {
                     Text("\(audioPlayer.currentTime.formattedTime())")
                         .font(.headline)
@@ -60,12 +72,20 @@ struct AudioInfoOverlay: View {
             }
             .padding()
         }
+        .onAppear {
+            sliderValue = audioPlayer.currentTime
+        }
+        .onChange(of: audioPlayer.currentTime) {
+            if !isSeeking {
+                sliderValue = audioPlayer.currentTime
+            }
+        }
     }
 }
 
 struct ButtonCluster: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
-    var song: Song
+    @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
     
     var body: some View {
@@ -73,7 +93,6 @@ struct ButtonCluster: View {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
             }
-            
             Button{
                 audioPlayer.togglePlayPause()
             } label: {
@@ -135,6 +154,11 @@ struct SongView: View {
             
             AudioInfoOverlay()
         } // end zstack
+//        .toolbar {
+//            ToolbarItem(placement: .topBarTrailing) {
+//                ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
+//            }
+//        }
         .onAppear {
             audioPlayer.setup(song: song)
         }

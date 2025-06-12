@@ -24,7 +24,101 @@ struct CategoryTag: View {
     }
 }
 
+extension TimeInterval {
+    func formattedTime() -> String {
+        let minutes = Int(self) / 60
+        let seconds = Int(self) % 60
+        return String(format: "%2d:%02d", minutes, seconds)
+    }
+}
+
+// overlay with the song info
+struct AudioInfoOverlay: View {
+    @EnvironmentObject var audioPlayer: AudioPlayerViewModel
+    @State private var sliderValue: Double = 0
+    @State private var isSeeking = false
+    
+    var body: some View {
+        // simple progressView of progress of the song
+        VStack {
+            Spacer()
+            VStack {
+                if audioPlayer.duration > 0 {
+                    Slider(
+                        value: $sliderValue,
+                        in: 0...audioPlayer.duration,
+                        onEditingChanged: { editing in
+                            isSeeking = editing
+                            if !editing {
+                                audioPlayer.seek(to: sliderValue)
+                            }
+                        }
+                    )
+                }
+                HStack {
+                    Text("\(audioPlayer.currentTime.formattedTime())")
+                        .font(.headline)
+                    Spacer()
+                    Text("-\(audioPlayer.timeLeft.formattedTime())")
+                        .font(.headline)
+                }
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(.accent.opacity(0.1))
+            }
+            .padding()
+        }
+        .onAppear {
+            sliderValue = audioPlayer.currentTime
+        }
+        .onChange(of: audioPlayer.currentTime) {
+            if !isSeeking {
+                sliderValue = audioPlayer.currentTime
+            }
+        }
+    }
+}
+
+struct ButtonCluster: View {
+    @EnvironmentObject var audioPlayer: AudioPlayerViewModel
+    @ObservedObject var song: Song
+    var toggleFavoriteAction: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            Button(action: toggleFavoriteAction) {
+                Image(systemName: song.isFavorite ? "star.fill" : "star")
+            }
+            Button{
+                audioPlayer.togglePlayPause()
+            } label: {
+                Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(12)
+        .controlGroupStyle(.navigation)
+        .background {
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color.accentColor.opacity(0.1))
+        }
+        .overlay {
+            Divider()
+                .padding(.vertical, 5)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .padding()
+    }
+}
+
 struct SongView: View {
+    @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
     
@@ -51,41 +145,32 @@ struct SongView: View {
                     Spacer()
                     
                     // button
-                    HStack(spacing: 20) {
-                        Button(action: toggleFavoriteAction) {
-                            Image(systemName: song.isFavorite ? "star.fill" : "star")
-                        }
-                        
-                        Button(action: {}) {
-                            Image(systemName: "speaker.wave.2.fill")
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .padding(12)
-                    .controlGroupStyle(.navigation)
-                    .background {
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(Color.accentColor.opacity(0.1))
-                    }
-                    .overlay {
-                        Divider()
-                            .padding(.vertical, 5)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 15))
-                    .padding()
+                    ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
                 }
                 
                 // to push top bar to the top
                 Spacer()
             }
+            
+            AudioInfoOverlay()
+        } // end zstack
+//        .toolbar {
+//            ToolbarItem(placement: .topBarTrailing) {
+//                ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
+//            }
+//        }
+        .onAppear {
+            audioPlayer.setup(song: song)
         }
-    }
+        .onDisappear {
+            audioPlayer.stop()
+        }
+    }// end body
 }
 
 #Preview {
     SongView(song: Song(entity: Song.entity(), insertInto: DataManager.preview.container.viewContext)) {
         print("Toggle favorite action triggered")
     }
+    .environmentObject(AudioPlayerViewModel())
 }

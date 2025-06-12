@@ -10,6 +10,16 @@
 		DB5B11212DF0D6F30051B2D2 /* songbook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = songbook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DBA1F3552DFA29B20003ECF7 /* Exceptions for "songbook" folder in "songbook" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = DB5B11202DF0D6F30051B2D2 /* songbook */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DB1F1A492DF0F31200D8C4FF /* pdfs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -18,7 +28,15 @@
 		};
 		DB5B11232DF0D6F30051B2D2 /* songbook */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DBA1F3552DFA29B20003ECF7 /* Exceptions for "songbook" folder in "songbook" target */,
+			);
 			path = songbook;
+			sourceTree = "<group>";
+		};
+		DBAB34D42DF8DDEC00762B66 /* audio */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = audio;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -35,6 +53,7 @@
 		DB5B11182DF0D6F30051B2D2 = {
 			isa = PBXGroup;
 			children = (
+				DBAB34D42DF8DDEC00762B66 /* audio */,
 				DB1F1A492DF0F31200D8C4FF /* pdfs */,
 				DB5B11232DF0D6F30051B2D2 /* songbook */,
 				DB5B11222DF0D6F30051B2D2 /* Products */,
@@ -65,6 +84,7 @@
 			fileSystemSynchronizedGroups = (
 				DB1F1A492DF0F31200D8C4FF /* pdfs */,
 				DB5B11232DF0D6F30051B2D2 /* songbook */,
+				DBAB34D42DF8DDEC00762B66 /* audio */,
 			);
 			name = songbook;
 			productName = songbook;
@@ -247,6 +267,7 @@
 				DEVELOPMENT_TEAM = N44284XDCS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = songbook/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Songbook;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -289,6 +310,7 @@
 				DEVELOPMENT_TEAM = N44284XDCS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = songbook/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Songbook;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

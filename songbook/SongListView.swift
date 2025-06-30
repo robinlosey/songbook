@@ -76,21 +76,18 @@ struct SongSection: View {
 struct SongListView: View {
     @StateObject var viewModel: SongListViewModel
     var body: some View {
-        NavigationStack {
-            List {
-                ForEach(viewModel.sortedSectionKeys, id: \.self) { sectionKey in
-                    SongSection(sectionKey: sectionKey, viewModel: viewModel)
-                } // end ForEach
-            } // end list
-            .navigationTitle(viewModel.category?.name ?? "All Songs")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    SortPicker(sortByBinding: $viewModel.sortBy)
-                } // end ToolbarItem
-            }// end toolbar
-            
-        }// end NavigationStack
-    } // end body
+        List {
+            ForEach(viewModel.sortedSectionKeys, id: \.self) { sectionKey in
+                SongSection(sectionKey: sectionKey, viewModel: viewModel)
+            } // end ForEach
+        } // end list
+        .navigationTitle(viewModel.category?.name ?? "All Songs")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                SortPicker(sortByBinding: $viewModel.sortBy)
+            } // end ToolbarItem
+        }// end toolbar
+    }
 }
 
 #Preview {

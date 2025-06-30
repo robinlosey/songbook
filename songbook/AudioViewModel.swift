@@ -256,6 +256,7 @@ class AudioPlayerViewModel: ObservableObject {
 
         var nowPlayingInfo = [String: Any]()
         nowPlayingInfo[MPMediaItemPropertyTitle] = song.title ?? "Unknown Title"
+        nowPlayingInfo[MPMediaItemPropertyArtist] = song.artist ?? "Unknown Artist"
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0.0

@@ -32,6 +32,26 @@ extension TimeInterval {
     }
 }
 
+struct CustomButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaledToFill()
+            .padding(15)
+            .background {
+                Circle()
+                    .fill(.thinMaterial)
+                Circle()
+                    .fill(.accent.opacity(0.3))
+            }
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .overlay {
+                Circle()
+                    .stroke()
+                    .opacity(0.3)
+            }
+    }
+}
+
 // overlay with the song info
 struct AudioInfoOverlay: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
@@ -89,30 +109,20 @@ struct ButtonCluster: View {
     var toggleFavoriteAction: () -> Void
     
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 10) {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
+                    .font(.subheadline)
             }
+
             Button{
                 audioPlayer.togglePlayPause()
             } label: {
                 Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.headline)
             }
         }
-        .buttonStyle(.plain)
-        .padding(12)
-        .controlGroupStyle(.navigation)
-        .background {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.ultraThinMaterial)
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.accentColor.opacity(0.1))
-        }
-        .overlay {
-            Divider()
-                .padding(.vertical, 5)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .buttonStyle(CustomButtonStyle())
         .padding()
     }
 }

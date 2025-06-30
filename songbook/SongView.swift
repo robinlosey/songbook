@@ -32,7 +32,7 @@ extension TimeInterval {
     }
 }
 
-struct CustomButtonStyle: ButtonStyle {
+struct ClusterButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaledToFill()
@@ -122,7 +122,7 @@ struct ButtonCluster: View {
                     .font(.headline)
             }
         }
-        .buttonStyle(CustomButtonStyle())
+        .buttonStyle(ClusterButtonStyle())
         .padding()
     }
 }

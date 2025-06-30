@@ -8,6 +8,27 @@
 import SwiftUI
 import CoreData
 
+struct TagGroupView: View {
+    var tags: [Category]
+    
+    var body: some View {
+        if tags.isEmpty {
+            EmptyView()
+        } else {
+            LazyHStack(spacing: 8) {
+                ForEach(tags) { tag in
+                    Text(tag.name ?? "Untitled Tag")
+                        .font(.caption)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color.accent.opacity(0.2))
+                        .clipShape(Capsule())
+                }
+            }
+        }
+    }
+}
+
 struct SongRowView: View {
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
@@ -19,7 +40,7 @@ struct SongRowView: View {
             }
             .buttonStyle(.plain)
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(song.title ?? "Untitled Song")
                     .font(.headline)
                 Text(song.artist ?? "Unknown Artist")
@@ -27,6 +48,11 @@ struct SongRowView: View {
                 Text(song.first_line ?? "")
                     .font(.caption)
                     .foregroundColor(.gray)
+                
+                // Tag Groups
+                ScrollView(.horizontal, showsIndicators: false) {
+                    TagGroupView(tags: (song.categories?.allObjects as? [Category]) ?? [])
+                }
             }
         }
     }

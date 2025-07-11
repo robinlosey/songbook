@@ -37,7 +37,7 @@ struct CategoryListView: View {
                 NavigationLink {
                     SongListView(viewModel: SongListViewModel())
                 } label: {
-                    CategoryRowView(name: "All Songs", count: nil)
+                    CategoryRowView(name: "All Songs", count: viewModel.totalSongs)
                 }
                 ForEach(viewModel.categories, id: \.self) { category in
                     NavigationLink {

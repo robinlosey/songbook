@@ -107,11 +107,15 @@ struct SongListView: View {
             ForEach(viewModel.sortedSectionKeys, id: \.self) { sectionKey in
                 SongSection(sectionKey: sectionKey, viewModel: viewModel)
             } // end ForEach
+            
+            if (viewModel.songs.isEmpty) {
+                Text("No songs found.")
+            }
         } // end list
         .navigationTitle(viewModel.category?.name ?? "All Songs")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 10) {
+                HStack(spacing: 5) {
                     SortPicker(sortByBinding: $viewModel.sortBy)
                     
                     Button {
@@ -126,9 +130,9 @@ struct SongListView: View {
 //                        }
                         Image(systemName: viewModel.onlyFavorites ? "star.square.on.square.fill" : "star.square.on.square")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.circle)
                     .labelStyle(.titleAndIcon)
-                    .padding(.vertical, 20)
                 }
             } // end item
         } // end toolbar

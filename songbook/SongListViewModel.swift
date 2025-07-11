@@ -43,6 +43,7 @@ class SongListViewModel: ObservableObject {
     
     @Published var songs: [Song] = []
     @Published var sortBy: SortOption = .title
+    @Published var onlyFavorites: Bool = false
     
     var sectionedSongs: [String: [Song]] {
         Dictionary(grouping: songs, by: { sortBy.sectionIdentifier(for: $0) })
@@ -71,14 +72,29 @@ class SongListViewModel: ObservableObject {
         fetchSongs()
     }
     
+    func toggleOnlyFavorites() {
+        onlyFavorites.toggle()
+        fetchSongs()
+    }
+    
     func fetchSongs() {
         let request: NSFetchRequest<Song> = Song.fetchRequest()
         // Set the sort descriptor based on the selected sort type
         request.sortDescriptors = [sortBy.sortDescriptor]
         
+        var predicates: [NSPredicate] = []
+        
         // if a category is provided, filter songs by that category
         if let category = category {
-            request.predicate = NSPredicate(format: "ANY categories == %@", category)
+            predicates.append(NSPredicate(format: "ANY categories == %@", category))
+        }
+        
+        if onlyFavorites {
+            predicates.append(NSPredicate(format: "isFavorite == YES"))
+        }
+        
+        if !predicates.isEmpty {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
         
         do {

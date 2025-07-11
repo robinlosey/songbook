@@ -101,6 +101,7 @@ struct SongSection: View {
 
 struct SongListView: View {
     @StateObject var viewModel: SongListViewModel
+    
     var body: some View {
         List {
             ForEach(viewModel.sortedSectionKeys, id: \.self) { sectionKey in
@@ -109,10 +110,28 @@ struct SongListView: View {
         } // end list
         .navigationTitle(viewModel.category?.name ?? "All Songs")
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                SortPicker(sortByBinding: $viewModel.sortBy)
-            } // end ToolbarItem
-        }// end toolbar
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack(spacing: 10) {
+                    SortPicker(sortByBinding: $viewModel.sortBy)
+                    
+                    Button {
+                        withAnimation {
+                            viewModel.toggleOnlyFavorites()
+                        }
+                    } label: {
+//                        if viewModel.onlyFavorites {
+//                            Label("Show All", systemImage: "chevron.compact.down")
+//                        } else {
+//                            Label("Show Favorites", systemImage: "star.fill")
+//                        }
+                        Image(systemName: viewModel.onlyFavorites ? "star.square.on.square.fill" : "star.square.on.square")
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.titleAndIcon)
+                    .padding(.vertical, 20)
+                }
+            } // end item
+        } // end toolbar
     }
 }
 

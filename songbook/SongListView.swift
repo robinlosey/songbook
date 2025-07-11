@@ -185,9 +185,15 @@ struct SongListView: View {
                         Text("No songs found.")
                     }
                 } // end list
+                .searchable(text: $viewModel.searchText)
                 .overlay(
                     AlphabetIndexView(keys: viewModel.sortedSectionKeys, proxy: proxy)
                 )
+            }
+            if viewModel.isLoading {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .progressViewStyle(CircularProgressViewStyle())
             }
         }
         .navigationTitle(viewModel.category?.name ?? "All Songs")

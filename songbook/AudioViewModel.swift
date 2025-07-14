@@ -45,6 +45,7 @@ class AudioPlayerViewModel: ObservableObject {
     private var player: AVPlayer?
     private var timeObserverToken: Any?
     private var cancellables = Set<AnyCancellable>()
+    private var artwork: MPMediaItemArtwork?
 
     var currentSong: Song? {
         switch playbackState {
@@ -65,11 +66,23 @@ class AudioPlayerViewModel: ObservableObject {
     init() {
         configureAudioSession()
         setupRemoteTransportControls()
+        setupArtwork()
     }
     
     deinit {
         MainActor.assumeIsolated {
             stop()
+        }
+    }
+    
+    private func setupArtwork() {
+        if let image = UIImage(named: "NowPlayingIcon") {
+            artwork = MPMediaItemArtwork(boundsSize: image.size) { @Sendable size in
+                let renderer = UIGraphicsImageRenderer(size: size)
+                return renderer.image { _ in
+                    image.draw(in: CGRect(origin: .zero, size: size))
+                }
+            }
         }
     }
     
@@ -265,6 +278,10 @@ class AudioPlayerViewModel: ObservableObject {
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0.0
+        
+        if let art = artwork {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = art
+        }
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }

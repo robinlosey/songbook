@@ -13,6 +13,11 @@ import MediaPlayer
 @MainActor
 class AudioPlayerViewModel: ObservableObject {
 
+    enum RepeatMode {
+        case off
+        case repeatOne
+    }
+
     enum PlaybackState {
         case stopped
         case setup(song: Song)
@@ -38,6 +43,7 @@ class AudioPlayerViewModel: ObservableObject {
     @Published private(set) var playbackState: PlaybackState = .stopped
     @Published private(set) var currentTime: TimeInterval = 0
     @Published private(set) var duration: TimeInterval = 0
+    @Published private(set) var repeatMode: RepeatMode = .off
     var timeLeft: TimeInterval {
         max(0, duration - currentTime)
     }
@@ -146,6 +152,14 @@ class AudioPlayerViewModel: ObservableObject {
         }
     }
 
+    func toggleRepeat() {
+        if repeatMode == .off {
+            repeatMode = .repeatOne
+        } else {
+            repeatMode = .off
+        }
+    }
+
     func stop() {
         player?.pause()
         if let timeObserverToken = timeObserverToken {
@@ -211,9 +225,14 @@ class AudioPlayerViewModel: ObservableObject {
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.player?.seek(to: .zero)
-                Task { @MainActor in
-                    self?.currentTime = 0
+                guard let self = self else { return }
+                self.player?.seek(to: .zero)
+                if self.repeatMode == .repeatOne {
+                    self.player?.play()
+                } else {
+                    Task { @MainActor in
+                        self.currentTime = 0
+                    }
                 }
             }
             .store(in: &cancellables)

@@ -90,11 +90,11 @@ struct AudioInfoOverlay: View {
                         }
                     )
                     
-                    // repeats
                     Button {
-                        
+                        audioPlayer.toggleRepeat()
                     } label: {
-                        
+                        Image(audioPlayer.repeatMode == .off ? "custom.repeat.1.rectangle" : "custom.repeat.1.rectangle.fill")
+                            .font(.title)
                     }
                 }
                 HStack {
@@ -105,6 +105,7 @@ struct AudioInfoOverlay: View {
                     
                     // play/pause, ±5 sec
                     HStack(alignment: .center, spacing: 19) {
+
                         Button {
                             audioPlayer.skipForward(by: -5.0)
                         } label: {
@@ -116,7 +117,6 @@ struct AudioInfoOverlay: View {
                         } label: {
                             Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
                         }
-                        .font(.title)
                         
                         Button {
                             audioPlayer.skipForward(by: 5.0)
@@ -124,7 +124,7 @@ struct AudioInfoOverlay: View {
                             Image(systemName: "goforward.5")
                         }
                     }
-                    .font(.headline)
+                    .font(.title)
                     
                     Spacer()
                     
@@ -173,7 +173,11 @@ struct ButtonCluster: View {
                 }
             } label: {
                 HStack {
-                    Image(controlsVisible.wrappedValue ? "custom.music.note" : "custom.music.note.slash")
+                    if (controlsVisible.wrappedValue) {
+                        Image(systemName: "music.note")
+                    } else {
+                        Image("custom.music.note.slash")
+                    }
                 }
                 .font(.headline)
             }

@@ -33,7 +33,7 @@ extension TimeInterval {
 }
 
 struct ClusterButtonStyle: ButtonStyle {
-    var isCapsule: Bool = true
+    var isCapsule: Bool = false
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -78,16 +78,25 @@ struct AudioInfoOverlay: View {
         VStack {
             Spacer()
             VStack {
-                Slider(
-                    value: $sliderValue,
-                    in: 0...audioPlayer.duration,
-                    onEditingChanged: { editing in
-                        isSeeking = editing
-                        if !editing {
-                            audioPlayer.seek(to: sliderValue)
+                HStack {
+                    Slider(
+                        value: $sliderValue,
+                        in: 0...audioPlayer.duration,
+                        onEditingChanged: { editing in
+                            isSeeking = editing
+                            if !editing {
+                                audioPlayer.seek(to: sliderValue)
+                            }
                         }
+                    )
+                    
+                    // repeats
+                    Button {
+                        
+                    } label: {
+                        
                     }
-                )
+                }
                 HStack {
                     Text("\(audioPlayer.currentTime.formattedTime())")
                         .font(.headline)
@@ -164,8 +173,7 @@ struct ButtonCluster: View {
                 }
             } label: {
                 HStack {
-                    Image(systemName: "music.note")
-                    Image(systemName: controlsVisible.wrappedValue ? "eye.slash" : "eye")
+                    Image(controlsVisible.wrappedValue ? "custom.music.note" : "custom.music.note.slash")
                 }
                 .font(.headline)
             }
@@ -193,13 +201,6 @@ struct SongView: View {
             
             VStack {
                 HStack {
-                    // category tags
-//                    HStack {
-//                        ForEach(sortedCategories, id: \.self) { category in
-//                            CategoryTag(category: category)
-//                        }
-//                    }
-//                    .padding()
                     
                     Spacer()
                     
@@ -214,11 +215,6 @@ struct SongView: View {
             AudioInfoOverlay()
                 .opacity(controlsVisible ? 1 : 0)
         } // end zstack
-//        .toolbar {
-//            ToolbarItem(placement: .topBarTrailing) {
-//                ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
-//            }
-//        }
         .onAppear {
             audioPlayer.setup(song: song)
         }

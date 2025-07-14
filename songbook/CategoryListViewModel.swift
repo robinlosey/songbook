@@ -11,11 +11,24 @@ import Combine
 
 class CategoryListViewModel: ObservableObject {
     @Published var categories: [Category] = []
+    @Published var totalSongs: Int = 0
+    
     let viewContext: NSManagedObjectContext
 
     init(context: NSManagedObjectContext = DataManager.shared.container.viewContext) {
         self.viewContext = context
         fetchCategories()
+        getTotalSongs()
+    }
+    
+    func getTotalSongs() {
+        let request: NSFetchRequest<Song> = Song.fetchRequest()
+        do {
+            totalSongs = try viewContext.count(for: request)
+        } catch {
+            print("Error fetching total songs: \(error.localizedDescription)")
+            totalSongs = 0
+        }
     }
 
     func fetchCategories() {

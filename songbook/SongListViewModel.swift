@@ -43,6 +43,9 @@ class SongListViewModel: ObservableObject {
     
     @Published var songs: [Song] = []
     @Published var sortBy: SortOption = .title
+    @Published var onlyFavorites: Bool = false
+    @Published var searchText: String = ""
+    @Published var isLoading: Bool = false
     
     var sectionedSongs: [String: [Song]] {
         Dictionary(grouping: songs, by: { sortBy.sectionIdentifier(for: $0) })
@@ -68,17 +71,44 @@ class SongListViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        $searchText
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main) // Add a small delay to avoid fetching on every keystroke
+            .sink { [weak self] _ in
+                self?.fetchSongs()
+            }
+            .store(in: &cancellables)
+        
+        fetchSongs()
+    }
+    
+    func toggleOnlyFavorites() {
+        onlyFavorites.toggle()
         fetchSongs()
     }
     
     func fetchSongs() {
+        self.isLoading = true
         let request: NSFetchRequest<Song> = Song.fetchRequest()
         // Set the sort descriptor based on the selected sort type
         request.sortDescriptors = [sortBy.sortDescriptor]
         
+        var predicates: [NSPredicate] = []
+        
         // if a category is provided, filter songs by that category
         if let category = category {
-            request.predicate = NSPredicate(format: "ANY categories == %@", category)
+            predicates.append(NSPredicate(format: "ANY categories == %@", category))
+        }
+        
+        if onlyFavorites {
+            predicates.append(NSPredicate(format: "isFavorite == YES"))
+        }
+        
+        if !searchText.isEmpty {
+            predicates.append(NSPredicate(format: "title CONTAINS[cd] %@ OR artist CONTAINS[cd] %@ OR first_line CONTAINS[cd] %@", searchText, searchText, searchText))
+        }
+        
+        if !predicates.isEmpty {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
         
         do {
@@ -88,6 +118,7 @@ class SongListViewModel: ObservableObject {
             print("Error fetching songs for ViewModel: \(error.localizedDescription)")
             songs = []
         }
+        self.isLoading = false
     }
     
     func toggleFavorite(for song: Song) {

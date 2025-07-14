@@ -33,21 +33,36 @@ extension TimeInterval {
 }
 
 struct ClusterButtonStyle: ButtonStyle {
+    var isCapsule: Bool = false
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaledToFill()
-            .padding(15)
+            .padding(12)
             .background {
-                Circle()
-                    .fill(.thinMaterial)
-                Circle()
-                    .fill(.accent.opacity(0.3))
+                if isCapsule {
+                    Capsule()
+                        .fill(.thinMaterial)
+                    Capsule()
+                        .fill(.accent.opacity(0.2))
+                } else {
+                    Circle()
+                        .fill(.thinMaterial)
+                    Circle()
+                        .fill(.accent.opacity(0.2))
+                }
             }
             .opacity(configuration.isPressed ? 0.7 : 1)
             .overlay {
-                Circle()
-                    .stroke()
-                    .opacity(0.3)
+                if isCapsule {
+                    Capsule()
+                        .stroke()
+                        .opacity(0.3)
+                } else {
+                    Circle()
+                        .stroke()
+                        .opacity(0.3)
+                }
             }
     }
 }
@@ -63,7 +78,7 @@ struct AudioInfoOverlay: View {
         VStack {
             Spacer()
             VStack {
-                if audioPlayer.duration > 0 {
+                HStack {
                     Slider(
                         value: $sliderValue,
                         in: 0...audioPlayer.duration,
@@ -74,11 +89,47 @@ struct AudioInfoOverlay: View {
                             }
                         }
                     )
+                    
+                    Button {
+                        audioPlayer.toggleRepeat()
+                    } label: {
+                        Image(audioPlayer.repeatMode == .off ? "custom.repeat.1.rectangle" : "custom.repeat.1.rectangle.fill")
+                            .font(.title)
+                    }
+                    .buttonStyle(.plain)
                 }
                 HStack {
                     Text("\(audioPlayer.currentTime.formattedTime())")
                         .font(.headline)
+                    
                     Spacer()
+                    
+                    // play/pause, ±5 sec
+                    HStack(alignment: .center, spacing: 19) {
+
+                        Button {
+                            audioPlayer.skipForward(by: -5.0)
+                        } label: {
+                            Image(systemName: "gobackward.5")
+                        }
+                        
+                        Button {
+                            audioPlayer.togglePlayPause()
+                        } label: {
+                            Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                        }
+                        
+                        Button {
+                            audioPlayer.skipForward(by: 5.0)
+                        } label: {
+                            Image(systemName: "goforward.5")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.title)
+                    
+                    Spacer()
+                    
                     Text("-\(audioPlayer.timeLeft.formattedTime())")
                         .font(.headline)
                 }
@@ -86,7 +137,7 @@ struct AudioInfoOverlay: View {
             .padding()
             .background {
                 RoundedRectangle(cornerRadius: 15)
-                    .fill(.ultraThinMaterial)
+                    .fill(.thinMaterial)
                 RoundedRectangle(cornerRadius: 15)
                     .fill(.accent.opacity(0.1))
             }
@@ -97,7 +148,9 @@ struct AudioInfoOverlay: View {
         }
         .onChange(of: audioPlayer.currentTime) {
             if !isSeeking {
-                sliderValue = audioPlayer.currentTime
+                withAnimation {
+                    sliderValue = audioPlayer.currentTime
+                }
             }
         }
     }
@@ -107,29 +160,41 @@ struct ButtonCluster: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
+    var controlsVisible: Binding<Bool>
     
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 15) {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
-                    .font(.subheadline)
+                    .padding(8)
+                    .contentShape(Rectangle())
             }
 
             Button{
-                audioPlayer.togglePlayPause()
+                withAnimation {
+                    controlsVisible.wrappedValue.toggle()
+                }
             } label: {
-                Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.headline)
+                Group {
+                    if (controlsVisible.wrappedValue) {
+                        Image(systemName: "music.note")
+                    } else {
+                        Image("custom.music.note.slash")
+                    }
+                }
+                .padding(8)
+                .contentShape(Rectangle())
             }
         }
-        .buttonStyle(ClusterButtonStyle())
-        .padding()
+        .font(.title2)
     }
 }
 
 struct SongView: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
+    @State private var controlsVisible = true
+    @State private var barsVisible = true
     var toggleFavoriteAction: () -> Void
     
     private var sortedCategories: [Category] {
@@ -141,34 +206,22 @@ struct SongView: View {
         ZStack {
             PDFViewer(forSong: song.filename ?? "Unknown")
                 .ignoresSafeArea(.all)
-            
-            VStack {
-                HStack {
-                    // category tags
-//                    HStack {
-//                        ForEach(sortedCategories, id: \.self) { category in
-//                            CategoryTag(category: category)
-//                        }
+            // this interferes with the double-tap to zoom for pdfviewer.
+//                .onTapGesture(count: 1) {
+//                    withAnimation(.easeInOut) {
+//                        barsVisible.toggle()
 //                    }
-//                    .padding()
-                    
-                    Spacer()
-                    
-                    // button
-                    ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
-                }
-                
-                // to push top bar to the top
-                Spacer()
-            }
+//                }
             
             AudioInfoOverlay()
+                .opacity((controlsVisible && barsVisible) ? 1 : 0)
         } // end zstack
-//        .toolbar {
-//            ToolbarItem(placement: .topBarTrailing) {
-//                ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
-//            }
-//        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction, controlsVisible: $controlsVisible)
+            }
+        }
+        .toolbar(barsVisible ? .visible : .hidden, for: .navigationBar)
         .onAppear {
             audioPlayer.setup(song: song)
         }

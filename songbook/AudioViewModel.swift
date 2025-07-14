@@ -13,6 +13,11 @@ import MediaPlayer
 @MainActor
 class AudioPlayerViewModel: ObservableObject {
 
+    enum RepeatMode {
+        case off
+        case repeatOne
+    }
+
     enum PlaybackState {
         case stopped
         case setup(song: Song)
@@ -38,6 +43,7 @@ class AudioPlayerViewModel: ObservableObject {
     @Published private(set) var playbackState: PlaybackState = .stopped
     @Published private(set) var currentTime: TimeInterval = 0
     @Published private(set) var duration: TimeInterval = 0
+    @Published private(set) var repeatMode: RepeatMode = .off
     var timeLeft: TimeInterval {
         max(0, duration - currentTime)
     }
@@ -45,6 +51,7 @@ class AudioPlayerViewModel: ObservableObject {
     private var player: AVPlayer?
     private var timeObserverToken: Any?
     private var cancellables = Set<AnyCancellable>()
+    private var artwork: MPMediaItemArtwork?
 
     var currentSong: Song? {
         switch playbackState {
@@ -65,11 +72,23 @@ class AudioPlayerViewModel: ObservableObject {
     init() {
         configureAudioSession()
         setupRemoteTransportControls()
+        setupArtwork()
     }
     
     deinit {
         MainActor.assumeIsolated {
             stop()
+        }
+    }
+    
+    private func setupArtwork() {
+        if let image = UIImage(named: "NowPlayingIcon") {
+            artwork = MPMediaItemArtwork(boundsSize: image.size) { @Sendable size in
+                let renderer = UIGraphicsImageRenderer(size: size)
+                return renderer.image { _ in
+                    image.draw(in: CGRect(origin: .zero, size: size))
+                }
+            }
         }
     }
     
@@ -133,6 +152,14 @@ class AudioPlayerViewModel: ObservableObject {
         }
     }
 
+    func toggleRepeat() {
+        if repeatMode == .off {
+            repeatMode = .repeatOne
+        } else {
+            repeatMode = .off
+        }
+    }
+
     func stop() {
         player?.pause()
         if let timeObserverToken = timeObserverToken {
@@ -150,7 +177,8 @@ class AudioPlayerViewModel: ObservableObject {
 
     func seek(to time: TimeInterval) {
         guard let player = player else { return }
-        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+        let clampedTime = max(0, min(time, duration))
+        let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
             if finished {
                 Task {
@@ -158,6 +186,10 @@ class AudioPlayerViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func skipForward(by seconds: Double) {
+        seek(to: currentTime + seconds)
     }
 
     private func configureAudioSession() {
@@ -193,9 +225,14 @@ class AudioPlayerViewModel: ObservableObject {
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.player?.seek(to: .zero)
-                Task { @MainActor in
-                    self?.currentTime = 0
+                guard let self = self else { return }
+                self.player?.seek(to: .zero)
+                if self.repeatMode == .repeatOne {
+                    self.player?.play()
+                } else {
+                    Task { @MainActor in
+                        self.currentTime = 0
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -260,6 +297,10 @@ class AudioPlayerViewModel: ObservableObject {
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0.0
+        
+        if let art = artwork {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = art
+        }
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }

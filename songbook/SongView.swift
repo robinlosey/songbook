@@ -33,21 +33,36 @@ extension TimeInterval {
 }
 
 struct ClusterButtonStyle: ButtonStyle {
+    var isCapsule: Bool = true
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaledToFill()
             .padding(15)
             .background {
-                Circle()
-                    .fill(.thinMaterial)
-                Circle()
-                    .fill(.accent.opacity(0.3))
+                if isCapsule {
+                    Capsule()
+                        .fill(.thinMaterial)
+                    Capsule()
+                        .fill(.accent.opacity(0.3))
+                } else {
+                    Circle()
+                        .fill(.thinMaterial)
+                    Circle()
+                        .fill(.accent.opacity(0.3))
+                }
             }
             .opacity(configuration.isPressed ? 0.7 : 1)
             .overlay {
-                Circle()
-                    .stroke()
-                    .opacity(0.3)
+                if isCapsule {
+                    Capsule()
+                        .stroke()
+                        .opacity(0.3)
+                } else {
+                    Circle()
+                        .stroke()
+                        .opacity(0.3)
+                }
             }
     }
 }
@@ -63,22 +78,47 @@ struct AudioInfoOverlay: View {
         VStack {
             Spacer()
             VStack {
-                if audioPlayer.duration > 0 {
-                    Slider(
-                        value: $sliderValue,
-                        in: 0...audioPlayer.duration,
-                        onEditingChanged: { editing in
-                            isSeeking = editing
-                            if !editing {
-                                audioPlayer.seek(to: sliderValue)
-                            }
+                Slider(
+                    value: $sliderValue,
+                    in: 0...audioPlayer.duration,
+                    onEditingChanged: { editing in
+                        isSeeking = editing
+                        if !editing {
+                            audioPlayer.seek(to: sliderValue)
                         }
-                    )
-                }
+                    }
+                )
                 HStack {
                     Text("\(audioPlayer.currentTime.formattedTime())")
                         .font(.headline)
+                    
                     Spacer()
+                    
+                    // play/pause, ±5 sec
+                    HStack(alignment: .center, spacing: 19) {
+                        Button {
+                            audioPlayer.skipForward(by: -5.0)
+                        } label: {
+                            Image(systemName: "gobackward.5")
+                        }
+                        
+                        Button {
+                            audioPlayer.togglePlayPause()
+                        } label: {
+                            Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                        }
+                        .font(.title)
+                        
+                        Button {
+                            audioPlayer.skipForward(by: 5.0)
+                        } label: {
+                            Image(systemName: "goforward.5")
+                        }
+                    }
+                    .font(.headline)
+                    
+                    Spacer()
+                    
                     Text("-\(audioPlayer.timeLeft.formattedTime())")
                         .font(.headline)
                 }
@@ -97,7 +137,9 @@ struct AudioInfoOverlay: View {
         }
         .onChange(of: audioPlayer.currentTime) {
             if !isSeeking {
-                sliderValue = audioPlayer.currentTime
+                withAnimation {
+                    sliderValue = audioPlayer.currentTime
+                }
             }
         }
     }
@@ -107,6 +149,7 @@ struct ButtonCluster: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
+    var controlsVisible: Binding<Bool>
     
     var body: some View {
         HStack(spacing: 10) {
@@ -116,10 +159,15 @@ struct ButtonCluster: View {
             }
 
             Button{
-                audioPlayer.togglePlayPause()
+                withAnimation {
+                    controlsVisible.wrappedValue.toggle()
+                }
             } label: {
-                Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.headline)
+                HStack {
+                    Image(systemName: "music.note")
+                    Image(systemName: controlsVisible.wrappedValue ? "eye.slash" : "eye")
+                }
+                .font(.headline)
             }
         }
         .buttonStyle(ClusterButtonStyle())
@@ -130,6 +178,7 @@ struct ButtonCluster: View {
 struct SongView: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
+    @State private var controlsVisible = true
     var toggleFavoriteAction: () -> Void
     
     private var sortedCategories: [Category] {
@@ -155,7 +204,7 @@ struct SongView: View {
                     Spacer()
                     
                     // button
-                    ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction)
+                    ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction, controlsVisible: $controlsVisible)
                 }
                 
                 // to push top bar to the top
@@ -163,6 +212,7 @@ struct SongView: View {
             }
             
             AudioInfoOverlay()
+                .opacity(controlsVisible ? 1 : 0)
         } // end zstack
 //        .toolbar {
 //            ToolbarItem(placement: .topBarTrailing) {

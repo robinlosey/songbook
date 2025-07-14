@@ -150,7 +150,8 @@ class AudioPlayerViewModel: ObservableObject {
 
     func seek(to time: TimeInterval) {
         guard let player = player else { return }
-        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+        let clampedTime = max(0, min(time, duration))
+        let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
             if finished {
                 Task {
@@ -158,6 +159,10 @@ class AudioPlayerViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func skipForward(by seconds: Double) {
+        seek(to: currentTime + seconds)
     }
 
     private func configureAudioSession() {

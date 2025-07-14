@@ -38,18 +38,18 @@ struct ClusterButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaledToFill()
-            .padding(15)
+            .padding(12)
             .background {
                 if isCapsule {
                     Capsule()
                         .fill(.thinMaterial)
                     Capsule()
-                        .fill(.accent.opacity(0.3))
+                        .fill(.accent.opacity(0.2))
                 } else {
                     Circle()
                         .fill(.thinMaterial)
                     Circle()
-                        .fill(.accent.opacity(0.3))
+                        .fill(.accent.opacity(0.2))
                 }
             }
             .opacity(configuration.isPressed ? 0.7 : 1)
@@ -96,6 +96,7 @@ struct AudioInfoOverlay: View {
                         Image(audioPlayer.repeatMode == .off ? "custom.repeat.1.rectangle" : "custom.repeat.1.rectangle.fill")
                             .font(.title)
                     }
+                    .buttonStyle(.plain)
                 }
                 HStack {
                     Text("\(audioPlayer.currentTime.formattedTime())")
@@ -124,6 +125,7 @@ struct AudioInfoOverlay: View {
                             Image(systemName: "goforward.5")
                         }
                     }
+                    .buttonStyle(.plain)
                     .font(.title)
                     
                     Spacer()
@@ -135,7 +137,7 @@ struct AudioInfoOverlay: View {
             .padding()
             .background {
                 RoundedRectangle(cornerRadius: 15)
-                    .fill(.ultraThinMaterial)
+                    .fill(.thinMaterial)
                 RoundedRectangle(cornerRadius: 15)
                     .fill(.accent.opacity(0.1))
             }
@@ -161,10 +163,11 @@ struct ButtonCluster: View {
     var controlsVisible: Binding<Bool>
     
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 15) {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
-                    .font(.subheadline)
+                    .padding(8)
+                    .contentShape(Rectangle())
             }
 
             Button{
@@ -172,18 +175,18 @@ struct ButtonCluster: View {
                     controlsVisible.wrappedValue.toggle()
                 }
             } label: {
-                HStack {
+                Group {
                     if (controlsVisible.wrappedValue) {
                         Image(systemName: "music.note")
                     } else {
                         Image("custom.music.note.slash")
                     }
                 }
-                .font(.headline)
+                .padding(8)
+                .contentShape(Rectangle())
             }
         }
-        .buttonStyle(ClusterButtonStyle())
-        .padding()
+        .font(.title2)
     }
 }
 
@@ -191,6 +194,7 @@ struct SongView: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
     @State private var controlsVisible = true
+    @State private var barsVisible = true
     var toggleFavoriteAction: () -> Void
     
     private var sortedCategories: [Category] {
@@ -202,23 +206,22 @@ struct SongView: View {
         ZStack {
             PDFViewer(forSong: song.filename ?? "Unknown")
                 .ignoresSafeArea(.all)
-            
-            VStack {
-                HStack {
-                    
-                    Spacer()
-                    
-                    // button
-                    ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction, controlsVisible: $controlsVisible)
-                }
-                
-                // to push top bar to the top
-                Spacer()
-            }
+            // this interferes with the double-tap to zoom for pdfviewer.
+//                .onTapGesture(count: 1) {
+//                    withAnimation(.easeInOut) {
+//                        barsVisible.toggle()
+//                    }
+//                }
             
             AudioInfoOverlay()
-                .opacity(controlsVisible ? 1 : 0)
+                .opacity((controlsVisible && barsVisible) ? 1 : 0)
         } // end zstack
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction, controlsVisible: $controlsVisible)
+            }
+        }
+        .toolbar(barsVisible ? .visible : .hidden, for: .navigationBar)
         .onAppear {
             audioPlayer.setup(song: song)
         }

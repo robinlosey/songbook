@@ -52,6 +52,7 @@ class AudioPlayerViewModel: ObservableObject {
     private var timeObserverToken: Any?
     private var cancellables = Set<AnyCancellable>()
     private var artwork: MPMediaItemArtwork?
+    private var isAudioSessionConfigured = false
 
     var currentSong: Song? {
         switch playbackState {
@@ -70,7 +71,6 @@ class AudioPlayerViewModel: ObservableObject {
     }
 
     init() {
-        configureAudioSession()
         setupRemoteTransportControls()
         setupArtwork()
     }
@@ -116,6 +116,11 @@ class AudioPlayerViewModel: ObservableObject {
     
     func play() {
         guard player != nil else { return }
+        
+        if !isAudioSessionConfigured {
+            configureAudioSession()
+            isAudioSessionConfigured = true
+        }
         
         switch playbackState {
         case .setup(let song), .paused(let song):

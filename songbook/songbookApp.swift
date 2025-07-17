@@ -12,10 +12,12 @@ import AVFoundation
 struct songbookApp: App {
     let dataManager = DataManager.shared
     @StateObject var audioPlayer = AudioPlayerViewModel()
-
+    
     init() {
-        // Load songs from CSV when the app initializes, if they haven't been loaded already.
-        dataManager.loadSongsFromCSVIfNeeded()
+        let dm = dataManager
+        Task {
+             await dm.refreshAndUpdate()
+        }
     }
 
     var body: some Scene {

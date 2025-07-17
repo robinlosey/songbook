@@ -46,9 +46,14 @@ struct DataManager {
         }
         return result
     }()
-
+    
     let container: NSPersistentContainer
-
+    static let bundledCSVVersion: Int = 3
+    
+    // urls
+    static let csvVersionURL: String = ""
+    static let csvDownloadURL: String = ""
+    
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "songbook")
         if inMemory {
@@ -60,6 +65,85 @@ struct DataManager {
             }
         })
         container.viewContext.automaticallyMergesChangesFromParent = true
+    }
+    
+    func refreshAndUpdate() async {
+        // get csv version
+        let version = UserDefaults.standard.integer(forKey: "storedCSVVersion")
+        let onlineVersion = await getCSVVersion() ?? 0
+        
+        let latestVersion = max(onlineVersion, DataManager.bundledCSVVersion)
+        
+        if latestVersion <= version {
+            print("No need to update csv")
+            print("latestVersion: \(latestVersion), version: \(version)")
+            return
+        }
+
+        print("need to update data")
+        
+        if onlineVersion > version {
+            print("Need to download csv")
+            await downloadCSV()
+        }
+        
+        do {
+            try await performDatabaseUpdate()
+            // set version to latest version
+            UserDefaults.standard.set(latestVersion, forKey: "storedCSVVersion")
+            print("Database update complete. Version: \(latestVersion)")
+        } catch {
+            print("Failed to update database: \(error.localizedDescription)")
+        }
+    }
+
+    private func performDatabaseUpdate() async throws {
+        try await container.performBackgroundTask { context in
+            // Flush database
+            let entityNames = self.container.managedObjectModel.entities.compactMap { $0.name }
+            for entityName in entityNames {
+                let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+                let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+                try context.execute(deleteRequest)
+            }
+
+            print("flushed database")
+
+            // load songs from csv into the background context
+            self.loadSongsFromCSV(context: context)
+
+            // clean up any unused pdfs and mp3s
+            self.cleanUpUnusedResources(context: context)
+            
+            // Save the background context to commit the entire transaction.
+            try context.save()
+        }
+    }
+
+    private func cleanUpUnusedResources(context: NSManagedObjectContext) {
+        // delete any pdfs and mp3s that are not used by songs in the database
+        // make a set of all pdfs and mp3s in the pdfs/ and audio/ directories
+        // then, for each song, remove the pdf and mp3 from the set of paths we have
+        // finally, delete any paths that are left in the set
+        print("clean up unused resources not implemented")
+    }
+    
+    private func getCSVVersion() async -> Int? {
+        // request from csvVersionURL
+        // parse response
+        // return version
+        print("csv version from url not implemented")
+
+        // delay for 10 seconds before returning version
+        try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+        print("returning version 11")
+        return 11
+    }
+
+    private func downloadCSV() async {
+        // download csv from csvDownloadURL
+        // save to songs.csv
+        print("download csv not implemented")
     }
 
     private func findOrCreateCategory(withName name: String, in context: NSManagedObjectContext) -> Category {
@@ -83,56 +167,50 @@ struct DataManager {
 
     private func parseCSV(line: String) -> [String] {
         var fields = [String]()
-        var buffer = ""
+        var buffer = String()
         var inQuotes = false
-        let chars = Array(line)
-        var i = 0
-
-        while i < chars.count {
+        let chars = line
+        var i = chars.startIndex
+        
+        while i < chars.endIndex {
             let char = chars[i]
-
-            if char == "\"" { // Double quote character
+            
+            if char == "\"" {
                 // Check for an escaped quote ("")
-                if inQuotes && i + 1 < chars.count && chars[i+1] == "\"" {
-                    buffer.append("\"") // Append one quote to the buffer
-                    i += 1 // Advance past the second quote of the pair
+                let nextIndex = chars.index(after: i)
+                if inQuotes && nextIndex < chars.endIndex && chars[nextIndex] == "\"" {
+                    buffer.append("\"") // append escaped quote
+                    i = chars.index(after: nextIndex) // skip both quotes
+                    continue
                 } else {
-                    inQuotes.toggle() // Entering or exiting a quoted field
-                                      // The quote itself is a delimiter, not part of the content
+                    inQuotes.toggle() // toggle quote state
                 }
-            } else if char == "," && !inQuotes { // Comma delimiter outside of quotes
+            } else if char == "," && !inQuotes {
                 fields.append(buffer)
-                buffer = ""
+                buffer = String()
             } else {
-                buffer.append(char) // Append character to current field buffer
+                buffer.append(char)
             }
-            i += 1
+            
+            i = chars.index(after: i)
         }
-        fields.append(buffer) // Add the last field
-
-        // Trim whitespace from all parsed fields
+        
+        fields.append(buffer) // add final field
+        
+        // trim whitespace from all fields
         return fields.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     }
 
-    func loadSongsFromCSVIfNeeded() {
-        let context = container.viewContext
-        // check if songs already exist
-        let request: NSFetchRequest<Song> = Song.fetchRequest()
-        do {
-            let existingSongs = try context.fetch(request)
-            if !existingSongs.isEmpty {
-                print("Songs already loaded, skipping CSV import.")
-                return
-            }
-        } catch {
-            print("Error fetching existing songs: \(error.localizedDescription)")
-            // if fetching fails, we might still want to try loading
-        }
+    private func downloadSongResources(for song: String) {
+        print("download song resources not implemented")
+    }
+
+    private func loadSongsFromCSV(context: NSManagedObjectContext) {
         
         // load csv
         guard let csvPath = Bundle.main.path(forResource: "songs", ofType: "csv"),
               let csvContent = try? String(contentsOfFile: csvPath, encoding: .utf8) else {
-            print("Error loading CSV file. Make sure 'songs.csv' is added to the target.")
+            print("Error loading CSV file 'songs.csv'")
             return
         }
         
@@ -142,15 +220,20 @@ struct DataManager {
         // parse csv
         let lines = csvContent.components(separatedBy: .newlines)
         for line in lines.dropFirst() { // skip header
+
+            // skip empty lines
             if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                continue // skip empty lines
-            }
-            let cols = parseCSV(line: line)
-            guard cols.count >= 6 else { // Ensure at least title, artist, first_line, filename, ref, and indices
-                print("Skipping malformed line (expected at least 6 columns, got \(cols.count)): \(line)")
                 continue
             }
-            
+
+            // parse line
+            let cols = parseCSV(line: line)
+            guard cols.count == 6 else { // Ensure title, artist, first_line, filename, ref, and indices
+                print("Skipping malformed line (expected 6 columns, got \(cols.count)): \(line)")
+                continue
+            }
+
+            // create song
             let song = Song(context: context)
             song.title = cols[0]
             song.artist = cols[1]
@@ -170,15 +253,26 @@ struct DataManager {
                 }
             }
             
-            print("Loaded song: \(song.title ?? "Unknown") by \(song.artist ?? "Unknown")")
+            // skip song if any required fields are missing
+            guard let title = song.title, !title.isEmpty,
+                  let artist = song.artist, !artist.isEmpty,
+                  let filename = song.filename, !filename.isEmpty else {
+                context.delete(song)
+                print("Skipping song with missing required fields: \(line)")
+                continue
+            }
+
+            print("Loaded song: \(title) by \(artist)")
+
+            // check for pdf and mp3
+            let pdfPath = Bundle.main.path(forResource: filename, ofType: "pdf")
+            let mp3Path = Bundle.main.path(forResource: filename, ofType: "mp3")
+            if pdfPath == nil || mp3Path == nil {
+                print("Song has no pdf or mp3: \(title), with filename: \(filename)")
+                downloadSongResources(for: filename)
+            }
         }
         
-        // save context
-        do {
-            try context.save()
-            print("Successfully saved songs to Core Data.")
-        } catch {
-            print("Failed to save songs: \(error.localizedDescription)")
-        }
+        // save context is handled in `performDatabaseUpdate`
     }
 }

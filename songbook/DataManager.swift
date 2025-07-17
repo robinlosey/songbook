@@ -137,7 +137,7 @@ struct DataManager {
         // delay for 10 seconds before returning version
         try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
         print("returning version 11")
-        return 11
+        return 14
     }
 
     private func downloadCSV() async {

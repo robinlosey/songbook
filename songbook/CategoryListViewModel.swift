@@ -14,11 +14,20 @@ class CategoryListViewModel: ObservableObject {
     @Published var totalSongs: Int = 0
     
     let viewContext: NSManagedObjectContext
+    private var cancellables = Set<AnyCancellable>()
 
     init(context: NSManagedObjectContext = DataManager.shared.container.viewContext) {
         self.viewContext = context
         fetchCategories()
         getTotalSongs()
+        
+        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: nil)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.fetchCategories()
+                self?.getTotalSongs()
+            }
+            .store(in: &cancellables)
     }
     
     func getTotalSongs() {

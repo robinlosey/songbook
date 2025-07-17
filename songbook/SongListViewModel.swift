@@ -78,6 +78,13 @@ class SongListViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: nil)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.fetchSongs()
+            }
+            .store(in: &cancellables)
+        
         fetchSongs()
     }
     

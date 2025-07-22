@@ -48,11 +48,11 @@ struct DataManager {
     }()
     
     let container: NSPersistentContainer
-    static let bundledCSVVersion: Int = 3
+    static let bundledCSVVersion: Int = 20250719002
     
     // urls
-    static let csvVersionURL: String = ""
-    static let csvDownloadURL: String = ""
+    var csvVersionURL: String = ""
+    var csvDownloadURL: String = ""
     
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "songbook")
@@ -65,33 +65,60 @@ struct DataManager {
             }
         })
         container.viewContext.automaticallyMergesChangesFromParent = true
+
+        guard let path = Bundle.main.path(forResource: "config", ofType: "plist") else {
+            fatalError("Could not find config.plist")
+        }
+
+        let config = NSDictionary(contentsOfFile: path)
+        csvVersionURL = config?["csvVersionURL"] as? String ?? ""
+        csvDownloadURL = config?["csvDownloadURL"] as? String ?? ""
     }
     
     func refreshAndUpdate() async {
-        // get csv version
-        let version = UserDefaults.standard.integer(forKey: "storedCSVVersion")
+        let bundledVersion = DataManager.bundledCSVVersion
+        let storedVersion = UserDefaults.standard.integer(forKey: "storedCSVVersion")
         let onlineVersion = await getCSVVersion() ?? 0
         
-        let latestVersion = max(onlineVersion, DataManager.bundledCSVVersion)
+        print("bundledVersion: \(bundledVersion), onlineVersion: \(onlineVersion), storedVersion: \(storedVersion)")
         
-        if latestVersion <= version {
-            print("No need to update csv")
-            print("latestVersion: \(latestVersion), version: \(version)")
+        var finalVersion = max(onlineVersion, bundledVersion)
+        
+        var needsDownload = false
+        
+        if finalVersion <= storedVersion {
+            print("No update needed")
             return
         }
 
-        print("need to update data")
         
-        if onlineVersion > version {
-            print("Need to download csv")
-            await downloadCSV()
+        var targetIsOnline = finalVersion == onlineVersion
+
+        print("update necessary, \(storedVersion) -> \(finalVersion), from \(targetIsOnline ? "online" : "bundled")")
+        
+        if targetIsOnline {
+            let success = await downloadCSV()
+            if !success {
+                print("Download failed - falling back to bundled version")
+                finalVersion = bundledVersion
+                if finalVersion <= storedVersion {
+                    print("Fallback is unnecessary; bundled version is older than stored version")
+                    return
+                }
+            }
+        }
+        
+        // check once again, just in case
+        if finalVersion <= storedVersion {
+            print("No update needed")
+            return
         }
         
         do {
             try await performDatabaseUpdate()
             // set version to latest version
-            UserDefaults.standard.set(latestVersion, forKey: "storedCSVVersion")
-            print("Database update complete. Version: \(latestVersion)")
+            UserDefaults.standard.set(finalVersion, forKey: "storedCSVVersion")
+            print("Database update complete. Version: \(finalVersion)")
         } catch {
             print("Failed to update database: \(error.localizedDescription)")
         }
@@ -129,21 +156,53 @@ struct DataManager {
     }
     
     private func getCSVVersion() async -> Int? {
-        // request from csvVersionURL
-        // parse response
-        // return version
-        print("csv version from url not implemented")
-
-        // delay for 10 seconds before returning version
-        try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
-        print("returning version 11")
-        return 14
+        guard let url = URL(string: csvVersionURL) else {
+            print("Invalid url: \(csvVersionURL)")
+            return nil
+        }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let versionString = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            guard let versionString = versionString,
+                  let version = Int(versionString) else {
+                print("Could not parse version from response")
+                return nil
+            }
+            
+            print("Online CSV version: \(version)")
+            return version
+        } catch {
+            print("Failed to fetch CSV version: \(error.localizedDescription)")
+            return nil
+        }
     }
 
-    private func downloadCSV() async {
+    private func downloadCSV() async -> Bool {
         // download csv from csvDownloadURL
         // save to songs.csv
-        print("download csv not implemented")
+        guard let url = URL(string: csvDownloadURL) else {
+            print("Invalid url: \(csvDownloadURL)")
+            return false
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let csvPath = appSupportPath.appendingPathComponent("songs.csv")
+
+            try FileManager.default.createDirectory(at: appSupportPath, withIntermediateDirectories: true)
+
+            try data.write(to: csvPath)
+            print("Downloaded CSV to \(csvPath)")
+            return true
+        } catch {
+            print("Failed to download CSV: \(error.localizedDescription)")
+            return false
+        }
     }
 
     private func findOrCreateCategory(withName name: String, in context: NSManagedObjectContext) -> Category {
@@ -206,13 +265,29 @@ struct DataManager {
     }
 
     private func loadSongsFromCSV(context: NSManagedObjectContext) {
+        // try loading from app support first, then fall back to bundled resources
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let appSupportCSVPath = appSupportPath.appendingPathComponent("songs.csv")
         
-        // load csv
-        guard let csvPath = Bundle.main.path(forResource: "songs", ofType: "csv"),
-              let csvContent = try? String(contentsOfFile: csvPath, encoding: .utf8) else {
-            print("Error loading CSV file 'songs.csv'")
+        var csvContent: String? = nil
+        var source = ""
+        
+        if FileManager.default.fileExists(atPath: appSupportCSVPath.path) {
+            source = "app support"
+            csvContent = try? String(contentsOfFile: appSupportCSVPath.path, encoding: .utf8)
+        }
+        
+        if csvContent == nil, let bundlePath = Bundle.main.path(forResource: "songs", ofType: "csv") {
+            source = "bundled resources"
+            csvContent = try? String(contentsOfFile: bundlePath, encoding: .utf8)
+        }
+        
+        guard let csvContent = csvContent else {
+            print("No CSV content found")
             return
         }
+
+        print("Loaded CSV from \(source)")
         
         // csv structure: title,artist,first line,filename,Reference,Indices
         // ignore reference, indices are colon-sep list of categories
@@ -235,10 +310,10 @@ struct DataManager {
 
             // create song
             let song = Song(context: context)
-            song.title = cols[0]
-            song.artist = cols[1]
-            song.first_line = cols[2]
-            song.filename = cols[3]
+            song.title = cols[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            song.artist = cols[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            song.first_line = cols[2].trimmingCharacters(in: .whitespacesAndNewlines)
+            song.filename = cols[3].trimmingCharacters(in: .whitespacesAndNewlines)
             song.isFavorite = false // default to false
 
             // handle categories from 'Indices' column (cols[5])
@@ -265,6 +340,7 @@ struct DataManager {
             print("Loaded song: \(title) by \(artist)")
 
             // check for pdf and mp3
+            // todo fix, doesn't work
             let pdfPath = Bundle.main.path(forResource: filename, ofType: "pdf")
             let mp3Path = Bundle.main.path(forResource: filename, ofType: "mp3")
             if pdfPath == nil || mp3Path == nil {

@@ -9,9 +9,12 @@ import Foundation
 import AVFoundation
 import Combine
 import MediaPlayer
+import os.log
 
 @MainActor
 class AudioPlayerViewModel: ObservableObject {
+
+    static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "AudioPlayerViewModel")
 
     enum RepeatMode {
         case off
@@ -101,7 +104,8 @@ class AudioPlayerViewModel: ObservableObject {
             return
         }
 
-        guard let url = Bundle.main.url(forResource: filename, withExtension: "mp3") else {
+        guard let url = DataManager.getSongMP3(for: filename) else {
+            AudioPlayerViewModel.logger.error("Song has no mp3: \(song.title ?? "Unknown") with filename: \(filename)")
             playbackState = .failed(error: .fileNotFound(filename))
             return
         }
@@ -115,7 +119,10 @@ class AudioPlayerViewModel: ObservableObject {
     }
     
     func play() {
-        guard player != nil else { return }
+        guard player != nil else { 
+            AudioPlayerViewModel.logger.error("Player is nil")
+            return
+        }
         
         if !isAudioSessionConfigured {
             configureAudioSession()
@@ -145,7 +152,10 @@ class AudioPlayerViewModel: ObservableObject {
 
     
     func togglePlayPause() {
-        guard player != nil else { return }
+        guard player != nil else {
+            AudioPlayerViewModel.logger.error("Player is nil")
+            return
+        }
 
         switch playbackState {
         case .playing:
@@ -203,7 +213,7 @@ class AudioPlayerViewModel: ObservableObject {
             try session.setCategory(.playback, mode: .default, options: [.allowAirPlay])
             try session.setActive(true)
         } catch {
-            print("Failed to set up audio session: \(error.localizedDescription)")
+            AudioPlayerViewModel.logger.error("Failed to set up audio session: \(error.localizedDescription)")
         }
     }
 

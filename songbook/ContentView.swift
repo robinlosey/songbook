@@ -10,6 +10,7 @@ import CoreData
 
 struct ContentView: View {
     @StateObject var viewModel: CategoryListViewModel
+    
     var body: some View {
         CategoryListView(viewModel: viewModel)
     }

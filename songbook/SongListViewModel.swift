@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 import Combine
+import os.log
 
 
 class SongListViewModel: ObservableObject {
@@ -56,6 +57,7 @@ class SongListViewModel: ObservableObject {
     }
     
     private var cancellables = Set<AnyCancellable>()
+    static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "SongListViewModel")
     let viewContext: NSManagedObjectContext
     let category: Category?
 
@@ -120,9 +122,9 @@ class SongListViewModel: ObservableObject {
         
         do {
             songs = try viewContext.fetch(request)
-            print("Fetched \(songs.count) songs for category: '\(category?.name ?? "All Songs")'")
+            SongListViewModel.logger.info("Fetched \(self.songs.count) songs for category: '\(self.category?.name ?? "All Songs")'")
         } catch {
-            print("Error fetching songs for ViewModel: \(error.localizedDescription)")
+            SongListViewModel.logger.error("Error fetching songs for ViewModel: \(error.localizedDescription)")
             songs = []
         }
         self.isLoading = false
@@ -132,9 +134,9 @@ class SongListViewModel: ObservableObject {
         song.isFavorite.toggle()
         do {
             try viewContext.save()
-            print("Toggled favorite status for song: \(song.title ?? "Unknown") to \(song.isFavorite)")
+            SongListViewModel.logger.info("Toggled favorite status for song: \(song.title ?? "Unknown") to \(song.isFavorite)")
         } catch {
-            print("Error saving favorite status: \(error.localizedDescription)")
+            SongListViewModel.logger.error("Error saving favorite status: \(error.localizedDescription)")
         }
     }
 }
@@ -147,7 +149,7 @@ class PreviewSongListViewModel: SongListViewModel {
         super.init(context: DataManager.preview.container.viewContext, category: category)
         
         if songs.isEmpty && viewContext === DataManager.preview.container.viewContext {
-             print("Preview ViewModel initialized, songs array is empty. DataManager.preview should have populated some items.")
+            SongListViewModel.logger.warning("Preview ViewModel initialized, songs array is empty. DataManager.preview should have populated some items.")
         }
     }
 } 

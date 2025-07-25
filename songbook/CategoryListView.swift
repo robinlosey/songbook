@@ -30,6 +30,7 @@ struct CategoryRowView: View {
 
 struct CategoryListView: View {
     @StateObject var viewModel: CategoryListViewModel
+    @State private var updateStatus: DataManager.UpdateStatus = DataManager.updateStatus
 
     var body: some View {
         NavigationStack {
@@ -48,6 +49,34 @@ struct CategoryListView: View {
                 }
             }
             .navigationTitle("Categories")
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    HStack {
+                        Text(String(UserDefaults.standard.integer(forKey: "storedCSVVersion")))
+                        switch updateStatus {
+                        case .notStarted:
+                            Image(systemName: "minus")
+                        case .updating:
+                            Image(systemName: "circle.dotted.circle")
+                        case .done:
+                            Image(systemName: "checkmark")
+                        }
+                        Button {
+                            Task {
+                                await DataManager.shared.refreshAndUpdate()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .disabled(updateStatus == .updating)
+                        .buttonStyle(.bordered)
+                    }
+                    .font(.footnote)
+                }
+            }
+        }
+        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
+            updateStatus = DataManager.updateStatus
         }
     }
 }

@@ -7,9 +7,11 @@
 
 import CoreData
 import Foundation
+import os.log
 
 struct DataManager {
     static let shared = DataManager()
+    static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "DataManager")
 
     @MainActor
     static var preview: DataManager = {
@@ -48,12 +50,29 @@ struct DataManager {
     }()
     
     let container: NSPersistentContainer
-    static let bundledCSVVersion: Int = 20250719002
+    static let bundledCSVVersion: Int = 20250719001
     
     // urls
-    var csvVersionURL: String = ""
-    var csvDownloadURL: String = ""
+    let csvVersionURL: String
+    let csvDownloadURL: String
+    let pdfDownloadURL: String
+    let mp3DownloadURL: String
     
+    private let noCacheSession: URLSession = {
+            let config = URLSessionConfiguration.default
+            config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            config.urlCache = nil
+            return URLSession(configuration: config)
+        }()
+
+    enum UpdateStatus {
+        case notStarted
+        case updating
+        case done
+    }
+
+    nonisolated(unsafe) static var updateStatus: DataManager.UpdateStatus = .notStarted
+
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "songbook")
         if inMemory {
@@ -71,38 +90,41 @@ struct DataManager {
         }
 
         let config = NSDictionary(contentsOfFile: path)
-        csvVersionURL = config?["csvVersionURL"] as? String ?? ""
-        csvDownloadURL = config?["csvDownloadURL"] as? String ?? ""
+        csvVersionURL = config?["csvVersionURL"] as? String ?? "couldn't find csvVersionURL"
+        csvDownloadURL = config?["csvDownloadURL"] as? String ?? "couldn't find csvDownloadURL"
+        pdfDownloadURL = config?["basePDFURL"] as? String ?? "couldn't find basePDFURL"
+        mp3DownloadURL = config?["baseAudioURL"] as? String ?? "couldn't find baseAudioURL"
     }
     
     func refreshAndUpdate() async {
+        DataManager.updateStatus = .updating
         let bundledVersion = DataManager.bundledCSVVersion
         let storedVersion = UserDefaults.standard.integer(forKey: "storedCSVVersion")
         let onlineVersion = await getCSVVersion() ?? 0
         
-        print("bundledVersion: \(bundledVersion), onlineVersion: \(onlineVersion), storedVersion: \(storedVersion)")
+        DataManager.logger.info("bundledVersion: \(bundledVersion), onlineVersion: \(onlineVersion), storedVersion: \(storedVersion)")
         
         var finalVersion = max(onlineVersion, bundledVersion)
         
-        var needsDownload = false
         
         if finalVersion <= storedVersion {
-            print("No update needed")
+            DataManager.logger.info("No update needed")
+            DataManager.updateStatus = .done
             return
         }
 
-        
-        var targetIsOnline = finalVersion == onlineVersion
+        let targetIsOnline = finalVersion == onlineVersion
 
-        print("update necessary, \(storedVersion) -> \(finalVersion), from \(targetIsOnline ? "online" : "bundled")")
+        DataManager.logger.info("update necessary, \(storedVersion) -> \(finalVersion), from \(targetIsOnline ? "online" : "bundled")")
         
         if targetIsOnline {
             let success = await downloadCSV()
             if !success {
-                print("Download failed - falling back to bundled version")
+                DataManager.logger.error("Download failed - falling back to bundled version")
                 finalVersion = bundledVersion
                 if finalVersion <= storedVersion {
-                    print("Fallback is unnecessary; bundled version is older than stored version")
+                    DataManager.logger.warning("Fallback is unnecessary; bundled version is older than stored version")
+                    DataManager.updateStatus = .done
                     return
                 }
             }
@@ -110,7 +132,8 @@ struct DataManager {
         
         // check once again, just in case
         if finalVersion <= storedVersion {
-            print("No update needed")
+            DataManager.logger.info("No update needed")
+            DataManager.updateStatus = .done
             return
         }
         
@@ -118,10 +141,11 @@ struct DataManager {
             try await performDatabaseUpdate()
             // set version to latest version
             UserDefaults.standard.set(finalVersion, forKey: "storedCSVVersion")
-            print("Database update complete. Version: \(finalVersion)")
+            DataManager.logger.info("Database update complete. Version: \(finalVersion)")
         } catch {
-            print("Failed to update database: \(error.localizedDescription)")
+            DataManager.logger.error("Failed to update database: \(error.localizedDescription)")
         }
+        DataManager.updateStatus = .done
     }
 
     private func performDatabaseUpdate() async throws {
@@ -134,7 +158,7 @@ struct DataManager {
                 try context.execute(deleteRequest)
             }
 
-            print("flushed database")
+            DataManager.logger.info("flushed database")
 
             // load songs from csv into the background context
             self.loadSongsFromCSV(context: context)
@@ -152,30 +176,31 @@ struct DataManager {
         // make a set of all pdfs and mp3s in the pdfs/ and audio/ directories
         // then, for each song, remove the pdf and mp3 from the set of paths we have
         // finally, delete any paths that are left in the set
-        print("clean up unused resources not implemented")
+        DataManager.logger.warning("clean up unused resources not implemented")
     }
     
     private func getCSVVersion() async -> Int? {
         guard let url = URL(string: csvVersionURL) else {
-            print("Invalid url: \(csvVersionURL)")
+            DataManager.logger.error("Invalid url: \(self.csvVersionURL)")
             return nil
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let versionString = String(data: data, encoding: .utf8)?
+            let request = URLRequest(url: url)
+            let (data, _) = try await noCacheSession.data(for: request)
+            let versionString = String(data: data, encoding: .ascii)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             
             guard let versionString = versionString,
                   let version = Int(versionString) else {
-                print("Could not parse version from response")
+                DataManager.logger.error("Could not parse version from response: \(versionString ?? "no response")")
                 return nil
             }
             
-            print("Online CSV version: \(version)")
+            DataManager.logger.info("Online CSV version: \(version)")
             return version
         } catch {
-            print("Failed to fetch CSV version: \(error.localizedDescription)")
+            DataManager.logger.error("Failed to fetch CSV version: \(error.localizedDescription)")
             return nil
         }
     }
@@ -184,12 +209,14 @@ struct DataManager {
         // download csv from csvDownloadURL
         // save to songs.csv
         guard let url = URL(string: csvDownloadURL) else {
-            print("Invalid url: \(csvDownloadURL)")
+            DataManager.logger.error("Invalid url: \(self.csvDownloadURL)")
             return false
         }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let request = URLRequest(url: url)
+            
+            let (data, _) = try await noCacheSession.data(for: request)
             
             let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             let csvPath = appSupportPath.appendingPathComponent("songs.csv")
@@ -197,10 +224,10 @@ struct DataManager {
             try FileManager.default.createDirectory(at: appSupportPath, withIntermediateDirectories: true)
 
             try data.write(to: csvPath)
-            print("Downloaded CSV to \(csvPath)")
+            DataManager.logger.info("Downloaded CSV to \(csvPath.absoluteString)")
             return true
         } catch {
-            print("Failed to download CSV: \(error.localizedDescription)")
+            DataManager.logger.error("Failed to download CSV: \(error.localizedDescription)")
             return false
         }
     }
@@ -216,7 +243,7 @@ struct DataManager {
             }
         } catch {
             // Log the error but continue to create a new category, as that's the recovery path.
-            print("Could not fetch Category: \(error.localizedDescription). Creating a new one.")
+            DataManager.logger.error("Could not fetch Category: \(error.localizedDescription). Creating a new one.")
         }
 
         let newCategory = Category(context: context)
@@ -260,8 +287,83 @@ struct DataManager {
         return fields.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     }
 
-    private func downloadSongResources(for song: String) {
-        print("download song resources not implemented")
+    private func downloadSongPDF(for song: String) {
+        guard let true_url = URL(string: pdfDownloadURL + "\(song).pdf") else {
+            DataManager.logger.error("Invalid url: \(self.pdfDownloadURL)")
+            return
+        }
+
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let pdfPath = appSupportPath.appendingPathComponent("pdfs/\(song).pdf")
+
+        Task {
+            do {
+                // create dir if it doesn't exist
+                try FileManager.default.createDirectory(at: pdfPath.deletingLastPathComponent(),
+                                                                   withIntermediateDirectories: true)
+                
+                let (data, _) = try await noCacheSession.data(from: true_url)
+                DataManager.logger.debug("\(pdfPath.absoluteString)")
+                DataManager.logger.debug("\(data)")
+                try data.write(to: pdfPath)
+                DataManager.logger.info("Downloaded PDF to \(pdfPath.absoluteString)")
+            } catch {
+                DataManager.logger.error("Failed to download PDF: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func downloadSongMP3(for song: String) {
+        guard let true_url = URL(string: mp3DownloadURL + "\(song).mp3") else {
+            DataManager.logger.error("Invalid url: \(self.mp3DownloadURL)")
+            return
+        }
+        
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let mp3Path = appSupportPath.appendingPathComponent("audio/\(song).mp3")
+        
+        Task {
+            do {
+                // create the dir if it doesn't exist
+                try FileManager.default.createDirectory(at: mp3Path.deletingLastPathComponent(),
+                                                                   withIntermediateDirectories: true)
+                
+                let (data, _) = try await noCacheSession.data(from: true_url)
+                try data.write(to: mp3Path)
+                DataManager.logger.debug("\(data)")
+                DataManager.logger.info("Downloaded MP3 to \(mp3Path.absoluteString)")
+            } catch {
+                DataManager.logger.error("Failed to download mp3: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    static func getSongPDF(for song: String) -> URL? {
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let pdfPath = appSupportPath.appendingPathComponent("pdfs/\(song).pdf")
+        if FileManager.default.fileExists(atPath: pdfPath.path) {
+            return pdfPath
+        }
+        
+        // check if in bundle
+        if let bundlePath = Bundle.main.path(forResource: song, ofType: "pdf") {
+            return URL(fileURLWithPath: bundlePath)
+        }
+        return nil
+    }
+
+    static func getSongMP3(for song: String) -> URL? {
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let mp3Path = appSupportPath.appendingPathComponent("audio/\(song).mp3")
+        if FileManager.default.fileExists(atPath: mp3Path.path) {
+            return mp3Path
+        }
+
+        // check if in bundle
+        if let bundlePath = Bundle.main.path(forResource: song, ofType: "mp3") {
+            return URL(fileURLWithPath: bundlePath)
+        }
+        return nil
     }
 
     private func loadSongsFromCSV(context: NSManagedObjectContext) {
@@ -283,11 +385,11 @@ struct DataManager {
         }
         
         guard let csvContent = csvContent else {
-            print("No CSV content found")
+            DataManager.logger.error("No CSV content found")
             return
         }
 
-        print("Loaded CSV from \(source)")
+        DataManager.logger.info("Loaded CSV from \(source)")
         
         // csv structure: title,artist,first line,filename,Reference,Indices
         // ignore reference, indices are colon-sep list of categories
@@ -304,7 +406,7 @@ struct DataManager {
             // parse line
             let cols = parseCSV(line: line)
             guard cols.count == 6 else { // Ensure title, artist, first_line, filename, ref, and indices
-                print("Skipping malformed line (expected 6 columns, got \(cols.count)): \(line)")
+                DataManager.logger.warning("Skipping malformed line (expected 6 columns, got \(cols.count)): \(line)")
                 continue
             }
 
@@ -333,22 +435,26 @@ struct DataManager {
                   let artist = song.artist, !artist.isEmpty,
                   let filename = song.filename, !filename.isEmpty else {
                 context.delete(song)
-                print("Skipping song with missing required fields: \(line)")
+                DataManager.logger.warning("Skipping song with missing required fields: \(line)")
                 continue
             }
 
-            print("Loaded song: \(title) by \(artist)")
+            DataManager.logger.info("Loaded song: \(title) by \(artist)")
 
             // check for pdf and mp3
             // todo fix, doesn't work
-            let pdfPath = Bundle.main.path(forResource: filename, ofType: "pdf")
-            let mp3Path = Bundle.main.path(forResource: filename, ofType: "mp3")
-            if pdfPath == nil || mp3Path == nil {
-                print("Song has no pdf or mp3: \(title), with filename: \(filename)")
-                downloadSongResources(for: filename)
+            let pdfPath = DataManager.getSongPDF(for: filename)
+            if pdfPath == nil {
+                DataManager.logger.info("Song has no pdf: \(title), with filename: \(filename)")
+                downloadSongPDF(for: filename)
+            }
+
+            let mp3Path = DataManager.getSongMP3(for: filename)
+            if mp3Path == nil {
+                DataManager.logger.info("Song has no mp3: \(title), with filename: \(filename)")
+                downloadSongMP3(for: filename)
             }
         }
-        
         // save context is handled in `performDatabaseUpdate`
     }
 }

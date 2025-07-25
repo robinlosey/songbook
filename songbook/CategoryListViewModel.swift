@@ -8,11 +8,13 @@
 import Foundation
 import CoreData
 import Combine
+import os.log
 
 class CategoryListViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var totalSongs: Int = 0
     
+    static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "CategoryListViewModel")
     let viewContext: NSManagedObjectContext
     private var cancellables = Set<AnyCancellable>()
 
@@ -35,7 +37,7 @@ class CategoryListViewModel: ObservableObject {
         do {
             totalSongs = try viewContext.count(for: request)
         } catch {
-            print("Error fetching total songs: \(error.localizedDescription)")
+            CategoryListViewModel.logger.error("Error fetching total songs: \(error.localizedDescription)")
             totalSongs = 0
         }
     }
@@ -48,7 +50,7 @@ class CategoryListViewModel: ObservableObject {
         do {
             categories = try viewContext.fetch(request)
         } catch {
-            print("Error fetching categories: \(error.localizedDescription)")
+            CategoryListViewModel.logger.error("Error fetching categories: \(error.localizedDescription)")
             categories = []
         }
     }
@@ -60,7 +62,7 @@ class PreviewCategoryListViewModel: CategoryListViewModel {
     init() {
         super.init(context: DataManager.preview.container.viewContext)
         if categories.isEmpty && viewContext === DataManager.preview.container.viewContext {
-            print("Preview ContextViewModel categories should be initialized with sample data by DataManager.preview, but is empty.")
+            CategoryListViewModel.logger.warning("Preview ContextViewModel categories should be initialized with sample data by DataManager.preview, but is empty.")
         }
     }
 } 

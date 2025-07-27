@@ -98,6 +98,14 @@ struct DataManager {
     
     func refreshAndUpdate() async {
         DataManager.updateStatus = .updating
+
+        if !UserDefaults.standard.bool(forKey: "verifyDB") {
+            let out = verifyDB(context: container.viewContext)
+            if out {
+                UserDefaults.standard.set(true, forKey: "verifyDB")
+            }
+        }
+
         let bundledVersion = DataManager.bundledCSVVersion
         let storedVersion = UserDefaults.standard.integer(forKey: "storedCSVVersion")
         let onlineVersion = await getCSVVersion() ?? 0
@@ -149,6 +157,7 @@ struct DataManager {
     }
 
     private func performDatabaseUpdate() async throws {
+        UserDefaults.standard.set(false, forKey: "verifyDB")
         try await container.performBackgroundTask { context in
             // Flush database
             let entityNames = self.container.managedObjectModel.entities.compactMap { $0.name }
@@ -442,7 +451,6 @@ struct DataManager {
             DataManager.logger.info("Loaded song: \(title) by \(artist)")
 
             // check for pdf and mp3
-            // todo fix, doesn't work
             let pdfPath = DataManager.getSongPDF(for: filename)
             if pdfPath == nil {
                 DataManager.logger.info("Song has no pdf: \(title), with filename: \(filename)")
@@ -455,6 +463,27 @@ struct DataManager {
                 downloadSongMP3(for: filename)
             }
         }
-        // save context is handled in `performDatabaseUpdate`
+    }
+    
+    private func verifyDB(context: NSManagedObjectContext) -> Bool {
+        // verify that all songs have a pdf and mp3
+        var broken = false
+        let request: NSFetchRequest<Song> = Song.fetchRequest()
+        let songs = try? context.fetch(request)
+        for song in songs ?? [] {
+            let pdfPath = DataManager.getSongPDF(for: song.filename!)
+            let mp3Path = DataManager.getSongMP3(for: song.filename!)
+            if pdfPath == nil {
+                DataManager.logger.error("Song has no pdf: \(song.title ?? "no title"), with filename: \(song.filename ?? "no filename")")
+                downloadSongPDF(for: song.filename!)
+                broken = true
+            }
+            if mp3Path == nil {
+                DataManager.logger.error("Song has no mp3: \(song.title ?? "no title"), with filename: \(song.filename ?? "no filename")")
+                downloadSongMP3(for: song.filename!)
+                broken = true
+            }
+        }
+        return !broken
     }
 }

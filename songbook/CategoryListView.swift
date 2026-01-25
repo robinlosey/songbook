@@ -11,17 +11,22 @@ import CoreData
 
 struct CategoryRowView: View {
     let name: String?
-    let count: Int?
-    
+    let count: Int?  // nil means loading
+
     var body: some View {
         HStack {
             Text(name ?? "Unknown Category")
                 .font(.headline)
             Spacer()
-            if count != nil {
-                Text("\(count!) Songs")
+            if let count = count {
+                Text("\(count) Songs")
                     .font(.subheadline)
                     .foregroundColor(.gray)
+            } else {
+                // Show spinner while loading
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .frame(width: 20, height: 20)
             }
         }
         .padding()
@@ -31,7 +36,7 @@ struct CategoryRowView: View {
 struct CategoryListView: View {
     @StateObject var viewModel: CategoryListViewModel
     @Environment(SyncManager.self) private var syncManager
-    
+
     private var isSyncing: Bool {
         switch syncManager.state {
         case .idle, .complete, .failed: return false
@@ -51,7 +56,7 @@ struct CategoryListView: View {
                     NavigationLink {
                         SongListView(viewModel: SongListViewModel(category: category))
                     } label: {
-                        CategoryRowView(name: category.name, count: category.songs?.count)
+                        CategoryRowView(name: category.name, count: viewModel.getSongCount(for: category))
                     }
                 }
             }
@@ -73,16 +78,16 @@ struct CategoryListView: View {
 struct SyncStatusBar: View {
     let syncManager: SyncManager
     let isSyncing: Bool
-    
+
     var body: some View {
         HStack {
             Text("v\(syncManager.currentVersion)")
-            
+
             Text("[\(stateText)]")
                 .bold()
-            
+
             Spacer()
-            
+
             // status icon
             Group {
                 switch syncManager.state {
@@ -96,7 +101,7 @@ struct SyncStatusBar: View {
                     Image(systemName: "exclamationmark.triangle")
                 }
             }
-            
+
             Button {
                 SyncManager.requestSync()
             } label: {
@@ -110,7 +115,7 @@ struct SyncStatusBar: View {
         .padding(.vertical, 8)
         .background(.bar)
     }
-    
+
     private var stateText: String {
         switch syncManager.state {
         case .idle: return "idle"

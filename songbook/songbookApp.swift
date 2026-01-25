@@ -13,6 +13,14 @@ struct songbookApp: App {
     @State private var syncManager = SyncManager.shared
     @StateObject private var audioPlayer = AudioPlayerViewModel()
     
+    init() {
+        // start network monitoring early
+        NetworkMonitor.shared.start()
+        
+        // ensure database is populated from bundled CSV before UI appears
+        DataManager.shared.ensureInitialDatabase()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView(viewModel: CategoryListViewModel())

@@ -2,72 +2,73 @@
 //  SongSyncServiceTests.swift
 //  songbookTests
 //
-//  Integration tests for SongSyncService with mocked components.
+//  integration tests for songsyncservice with mocked components
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import songbook
 
-final class SongSyncServiceTests: XCTestCase {
-    
-    var dataManager: DataManager!
-    
-    override func setUp() {
-        super.setUp()
+@Suite("SongSyncService Tests")
+@MainActor
+struct SongSyncServiceTests {
+
+    let dataManager: DataManager
+
+    init() {
         dataManager = DataManager.inMemory()
-        
-        // reset UserDefaults keys used by sync
+
+        // reset userdefaults keys used by sync
         UserDefaults.standard.removeObject(forKey: SyncKeys.storedCSVVersion)
         UserDefaults.standard.removeObject(forKey: SyncKeys.buildInProgress)
         UserDefaults.standard.removeObject(forKey: SyncKeys.lastSyncStatus)
         UserDefaults.standard.removeObject(forKey: SyncKeys.currentDB)
     }
-    
-    override func tearDown() {
-        dataManager = nil
-        super.tearDown()
-    }
-    
-    func testSyncStatusRecording() async {
+
+    @Test("sync status can be recorded and retrieved")
+    func syncStatusRecording() async {
         // manually record a status
         let status = SyncStatus(result: .success, fromVersion: 1, toVersion: 2)
         if let encoded = try? JSONEncoder().encode(status) {
             UserDefaults.standard.set(encoded, forKey: SyncKeys.lastSyncStatus)
         }
-        
+
         let retrieved = SongSyncService.lastSyncStatus()
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.result, .success)
-        XCTAssertEqual(retrieved?.fromVersion, 1)
-        XCTAssertEqual(retrieved?.toVersion, 2)
+        #expect(retrieved != nil)
+        #expect(retrieved?.result == .success)
+        #expect(retrieved?.fromVersion == 1)
+        #expect(retrieved?.toVersion == 2)
     }
-    
-    func testBuildInProgressFlag() {
+
+    @Test("build in progress flag toggles correctly")
+    func buildInProgressFlag() {
         // initially false
-        XCTAssertFalse(UserDefaults.standard.bool(forKey: SyncKeys.buildInProgress))
-        
+        #expect(UserDefaults.standard.bool(forKey: SyncKeys.buildInProgress) == false)
+
         // set to true
         UserDefaults.standard.set(true, forKey: SyncKeys.buildInProgress)
-        XCTAssertTrue(UserDefaults.standard.bool(forKey: SyncKeys.buildInProgress))
-        
+        #expect(UserDefaults.standard.bool(forKey: SyncKeys.buildInProgress) == true)
+
         // set to false
         UserDefaults.standard.set(false, forKey: SyncKeys.buildInProgress)
-        XCTAssertFalse(UserDefaults.standard.bool(forKey: SyncKeys.buildInProgress))
+        #expect(UserDefaults.standard.bool(forKey: SyncKeys.buildInProgress) == false)
     }
-    
-    func testCurrentDBToggle() {
+
+    @Test("current db toggles between A and B")
+    func currentDBToggle() {
         // defaults to A
-        XCTAssertEqual(dataManager.currentStore, "A")
-        
+        #expect(dataManager.currentStore == "A")
+
         // switch should flip
         dataManager.switchToInactiveStore()
-        XCTAssertEqual(dataManager.currentStore, "B")
-        
+        #expect(dataManager.currentStore == "B")
+
         dataManager.switchToInactiveStore()
-        XCTAssertEqual(dataManager.currentStore, "A")
+        #expect(dataManager.currentStore == "A")
     }
-    
-    func testSyncStateValues() {
+
+    @Test("all sync states can be created and compared")
+    func syncStateValues() {
         // test all sync states can be created
         let states: [SyncState] = [
             .idle,
@@ -79,17 +80,18 @@ final class SongSyncServiceTests: XCTestCase {
             .complete,
             .failed("Test error")
         ]
-        
-        XCTAssertEqual(states.count, 8)
-        
+
+        #expect(states.count == 8)
+
         // test equatable
-        XCTAssertEqual(SyncState.idle, SyncState.idle)
-        XCTAssertNotEqual(SyncState.idle, SyncState.checking)
-        XCTAssertEqual(SyncState.failed("error"), SyncState.failed("error"))
-        XCTAssertNotEqual(SyncState.failed("error1"), SyncState.failed("error2"))
+        #expect(SyncState.idle == SyncState.idle)
+        #expect(SyncState.idle != SyncState.checking)
+        #expect(SyncState.failed("error") == SyncState.failed("error"))
+        #expect(SyncState.failed("error1") != SyncState.failed("error2"))
     }
-    
-    func testSyncErrorDescriptions() {
+
+    @Test("sync errors have descriptions")
+    func syncErrorDescriptions() {
         let errors: [SyncError] = [
             .networkUnavailable,
             .csvDownloadFailed(underlying: NSError(domain: "test", code: 1)),
@@ -97,11 +99,10 @@ final class SongSyncServiceTests: XCTestCase {
             .databaseError(underlying: NSError(domain: "test", code: 2)),
             .resourceDownloadFailed(filename: "test.pdf")
         ]
-        
+
         for error in errors {
-            XCTAssertNotNil(error.errorDescription)
-            XCTAssertFalse(error.errorDescription!.isEmpty)
+            #expect(error.errorDescription != nil)
+            #expect(error.errorDescription!.isEmpty == false)
         }
     }
 }
-

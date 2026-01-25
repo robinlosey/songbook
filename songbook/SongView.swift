@@ -67,82 +67,31 @@ struct ClusterButtonStyle: ButtonStyle {
     }
 }
 
-// overlay with the song info
+// overlay showing audio controls based on availability
 struct AudioInfoOverlay: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
+    @ObservedObject var song: Song
     @State private var sliderValue: Double = 0
     @State private var isSeeking = false
     
     var body: some View {
-        // simple progressView of progress of the song
         VStack {
             Spacer()
-            VStack {
-                HStack {
-                    Slider(
-                        value: $sliderValue,
-                        in: 0...audioPlayer.duration,
-                        onEditingChanged: { editing in
-                            isSeeking = editing
-                            if !editing {
-                                audioPlayer.seek(to: sliderValue)
-                            }
-                        }
-                    )
-                    
-                    Button {
-                        audioPlayer.toggleRepeat()
-                    } label: {
-                        Image(audioPlayer.repeatMode == .off ? "custom.repeat.1.rectangle" : "custom.repeat.1.rectangle.fill")
-                            .font(.title)
-                    }
-                    .buttonStyle(.plain)
-                }
-                HStack {
-                    Text("\(audioPlayer.currentTime.formattedTime())")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    // play/pause, ±5 sec
-                    HStack(alignment: .center, spacing: 19) {
-
-                        Button {
-                            audioPlayer.skipForward(by: -5.0)
-                        } label: {
-                            Image(systemName: "gobackward.5")
-                        }
-                        
-                        Button {
-                            audioPlayer.togglePlayPause()
-                        } label: {
-                            Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                        }
-                        
-                        Button {
-                            audioPlayer.skipForward(by: 5.0)
-                        } label: {
-                            Image(systemName: "goforward.5")
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .font(.title)
-                    
-                    Spacer()
-                    
-                    Text("-\(audioPlayer.timeLeft.formattedTime())")
-                        .font(.headline)
-                }
+            
+            switch audioPlayer.audioAvailability {
+            case .available:
+                audioPlayerControls
+            case .downloadable:
+                downloadButton
+            case .downloading:
+                downloadingIndicator
+            case .notFound:
+                noAudioMessage
+            case .unknown:
+                checkingIndicator
             }
-            .padding()
-            .background {
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(.thinMaterial)
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(.accent.opacity(0.1))
-            }
-            .padding()
         }
+        .padding()
         .onAppear {
             sliderValue = audioPlayer.currentTime
         }
@@ -154,6 +103,138 @@ struct AudioInfoOverlay: View {
             }
         }
     }
+    
+    // MARK: - Audio Player Controls
+    
+    private var audioPlayerControls: some View {
+        VStack {
+            HStack {
+                Slider(
+                    value: $sliderValue,
+                    in: 0...max(audioPlayer.duration, 0.01),
+                    onEditingChanged: { editing in
+                        isSeeking = editing
+                        if !editing {
+                            audioPlayer.seek(to: sliderValue)
+                        }
+                    }
+                )
+                
+                Button {
+                    audioPlayer.toggleRepeat()
+                } label: {
+                    Image(audioPlayer.repeatMode == .off ? "custom.repeat.1.rectangle" : "custom.repeat.1.rectangle.fill")
+                        .font(.title)
+                }
+                .buttonStyle(.plain)
+            }
+            HStack {
+                Text("\(audioPlayer.currentTime.formattedTime())")
+                    .font(.headline)
+                
+                Spacer()
+                
+                HStack(alignment: .center, spacing: 19) {
+                    Button {
+                        audioPlayer.skipForward(by: -5.0)
+                    } label: {
+                        Image(systemName: "gobackward.5")
+                    }
+                    
+                    Button {
+                        audioPlayer.togglePlayPause()
+                    } label: {
+                        Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    }
+                    
+                    Button {
+                        audioPlayer.skipForward(by: 5.0)
+                    } label: {
+                        Image(systemName: "goforward.5")
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.title)
+                
+                Spacer()
+                
+                Text("-\(audioPlayer.timeLeft.formattedTime())")
+                    .font(.headline)
+            }
+        }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.thinMaterial)
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.accent.opacity(0.1))
+        }
+    }
+    
+    // MARK: - Download Button
+    
+    private var downloadButton: some View {
+        Button {
+            Task {
+                await audioPlayer.downloadAndSetup(song: song)
+            }
+        } label: {
+            Label("Download Audio", systemImage: "arrow.down.circle")
+                .font(.headline)
+                .padding()
+        }
+        .buttonStyle(.borderedProminent)
+        .background {
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.thinMaterial)
+        }
+    }
+    
+    // MARK: - Downloading Indicator
+    
+    private var downloadingIndicator: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+            Text("Downloading audio...")
+                .font(.headline)
+        }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.thinMaterial)
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.accent.opacity(0.1))
+        }
+    }
+    
+    // MARK: - No Audio Message
+    
+    private var noAudioMessage: some View {
+        Label("No audio available", systemImage: "speaker.slash")
+            .font(.headline)
+            .foregroundStyle(.secondary)
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(.thinMaterial)
+            }
+    }
+    
+    // MARK: - Checking Indicator
+    
+    private var checkingIndicator: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+            Text("Checking audio...")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 15)
+                .fill(.thinMaterial)
+        }
+    }
 }
 
 struct ButtonCluster: View {
@@ -161,6 +242,16 @@ struct ButtonCluster: View {
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
     var controlsVisible: Binding<Bool>
+    
+    // only show audio toggle when audio is available or downloadable
+    private var showAudioToggle: Bool {
+        switch audioPlayer.audioAvailability {
+        case .available, .downloadable, .downloading, .unknown:
+            return true
+        case .notFound:
+            return false
+        }
+    }
     
     var body: some View {
         HStack(spacing: 15) {
@@ -170,20 +261,22 @@ struct ButtonCluster: View {
                     .contentShape(Rectangle())
             }
 
-            Button{
-                withAnimation {
-                    controlsVisible.wrappedValue.toggle()
-                }
-            } label: {
-                Group {
-                    if (controlsVisible.wrappedValue) {
-                        Image(systemName: "music.note")
-                    } else {
-                        Image("custom.music.note.slash")
+            if showAudioToggle {
+                Button {
+                    withAnimation {
+                        controlsVisible.wrappedValue.toggle()
                     }
+                } label: {
+                    Group {
+                        if controlsVisible.wrappedValue {
+                            Image(systemName: "music.note")
+                        } else {
+                            Image("custom.music.note.slash")
+                        }
+                    }
+                    .padding(8)
+                    .contentShape(Rectangle())
                 }
-                .padding(8)
-                .contentShape(Rectangle())
             }
         }
         .font(.title2)
@@ -206,16 +299,10 @@ struct SongView: View {
         ZStack {
             PDFViewer(forSong: song.filename ?? "Unknown")
                 .ignoresSafeArea(.all)
-            // this interferes with the double-tap to zoom for pdfviewer.
-//                .onTapGesture(count: 1) {
-//                    withAnimation(.easeInOut) {
-//                        barsVisible.toggle()
-//                    }
-//                }
             
-            AudioInfoOverlay()
+            AudioInfoOverlay(song: song)
                 .opacity((controlsVisible && barsVisible) ? 1 : 0)
-        } // end zstack
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 ButtonCluster(song: song, toggleFavoriteAction: toggleFavoriteAction, controlsVisible: $controlsVisible)
@@ -228,7 +315,7 @@ struct SongView: View {
         .onDisappear {
             audioPlayer.stop()
         }
-    }// end body
+    }
 }
 
 #Preview {

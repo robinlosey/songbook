@@ -10,15 +10,15 @@ import CoreData
 import Combine
 import os.log
 
-
+@MainActor
 class SongListViewModel: ObservableObject {
     enum SortOption: String, CaseIterable, Identifiable {
         case title = "title"
         case artist = "artist"
         case firstLine = "first line"
-        
+
         var id: String { self.rawValue }
-        
+
         var sortDescriptor: NSSortDescriptor {
             switch self {
             case .title:
@@ -29,7 +29,7 @@ class SongListViewModel: ObservableObject {
                 return NSSortDescriptor(keyPath: \Song.first_line, ascending: true)
             }
         }
-        
+
         func sectionIdentifier(for song: Song) -> String {
             switch self {
             case .title:
@@ -41,95 +41,134 @@ class SongListViewModel: ObservableObject {
             }
         }
     }
-    
+
     @Published var songs: [Song] = []
     @Published var sortBy: SortOption = .title
     @Published var onlyFavorites: Bool = false
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
-    
+
     var sectionedSongs: [String: [Song]] {
         Dictionary(grouping: songs, by: { sortBy.sectionIdentifier(for: $0) })
     }
-    
+
     var sortedSectionKeys: [String] {
         sectionedSongs.keys.sorted()
     }
-    
+
     private var cancellables = Set<AnyCancellable>()
     static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "SongListViewModel")
-    let viewContext: NSManagedObjectContext
+    private let dataManager: DataManager
     let category: Category?
 
-    init(context: NSManagedObjectContext = DataManager.shared.container.viewContext,
-         category: Category? = nil) {
-        self.viewContext = context
+    // computed to always use current container after A/B swaps
+    var viewContext: NSManagedObjectContext {
+        dataManager.container.viewContext
+    }
+
+    init(dataManager: DataManager = .shared, category: Category? = nil) {
+        self.dataManager = dataManager
         self.category = category
-        
-        // Observe changes to the sortBy property
+
+        // observe changes to sortBy
         $sortBy
             .sink { [weak self] _ in
                 self?.fetchSongs()
             }
             .store(in: &cancellables)
-        
+
+        // debounce search to avoid fetching on every keystroke
         $searchText
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main) // Add a small delay to avoid fetching on every keystroke
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 self?.fetchSongs()
             }
             .store(in: &cancellables)
-        
+
         NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: nil)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.fetchSongs()
             }
             .store(in: &cancellables)
-        
+
+        // refresh after A/B database swap
+        NotificationCenter.default.publisher(for: .databaseDidSwitch, object: nil)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Self.logger.info("Database switched - refreshing songs")
+                self?.fetchSongs()
+            }
+            .store(in: &cancellables)
+
         fetchSongs()
     }
-    
+
     func toggleOnlyFavorites() {
         onlyFavorites.toggle()
         fetchSongs()
     }
-    
+
     func fetchSongs() {
-        self.isLoading = true
+        isLoading = true
+        let categoryID = category?.objectID
+        let categoryName = category?.name
+
+        // check query cache first
+        if let cached = dataManager.queryCache.getCachedSongs(for: categoryID) {
+            songs = cached
+            isLoading = false
+            Self.logger.debug("Using cached songs (\(cached.count) items)")
+            return
+        }
+
         let request: NSFetchRequest<Song> = Song.fetchRequest()
-        // Set the sort descriptor based on the selected sort type
         request.sortDescriptors = [sortBy.sortDescriptor]
-        
+
         var predicates: [NSPredicate] = []
-        
-        // if a category is provided, filter songs by that category
+
         if let category = category {
             predicates.append(NSPredicate(format: "ANY categories == %@", category))
         }
-        
+
         if onlyFavorites {
             predicates.append(NSPredicate(format: "isFavorite == YES"))
         }
-        
+
         if !searchText.isEmpty {
             predicates.append(NSPredicate(format: "title CONTAINS[cd] %@ OR artist CONTAINS[cd] %@ OR first_line CONTAINS[cd] %@", searchText, searchText, searchText))
         }
-        
+
         if !predicates.isEmpty {
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
-        
+
+        // cache miss - fetch from database
         do {
-            songs = try viewContext.fetch(request)
-            SongListViewModel.logger.info("Fetched \(self.songs.count) songs for category: '\(self.category?.name ?? "All Songs")'")
+            let allSongs = try viewContext.fetch(request)
+
+            // batch pdf availability check (10-100x faster than individual checks)
+            let filenames = allSongs.compactMap { $0.filename }
+            let availablePDFs = DataManager.getBatchPDFAvailability(for: filenames)
+
+            // filter to only show songs with available pdfs
+            let withPDF = allSongs.filter { song in
+                guard let filename = song.filename else { return false }
+                return availablePDFs.contains(filename)
+            }
+
+            songs = withPDF
+            dataManager.queryCache.setCachedSongs(withPDF, for: categoryID)
+
+            Self.logger.info("Fetched \(self.songs.count) songs with PDFs for category: '\(categoryName ?? "All Songs")'")
         } catch {
-            SongListViewModel.logger.error("Error fetching songs for ViewModel: \(error.localizedDescription)")
+            Self.logger.error("Error fetching songs for ViewModel: \(error.localizedDescription)")
             songs = []
         }
-        self.isLoading = false
+
+        isLoading = false
     }
-    
+
     func toggleFavorite(for song: Song) {
         song.isFavorite.toggle()
         do {
@@ -141,15 +180,13 @@ class SongListViewModel: ObservableObject {
     }
 }
 
-// For Previews, if you want to use the In-Memory store with sample data:
+// for previews using in-memory store with sample data
 class PreviewSongListViewModel: SongListViewModel {
-    @MainActor
     init(category: Category? = nil) {
-        // Use the preview DataManager's context
-        super.init(context: DataManager.preview.container.viewContext, category: category)
-        
-        if songs.isEmpty && viewContext === DataManager.preview.container.viewContext {
+        super.init(dataManager: DataManager.preview, category: category)
+
+        if songs.isEmpty {
             SongListViewModel.logger.warning("Preview ViewModel initialized, songs array is empty. DataManager.preview should have populated some items.")
         }
     }
-} 
+}

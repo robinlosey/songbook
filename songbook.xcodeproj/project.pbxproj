@@ -6,7 +6,23 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DB34BC992F25C17900D9BEAD /* TestPlan.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = DB34BC982F25C17900D9BEAD /* TestPlan.xctestplan */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DB34BCA42F25C52800D9BEAD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DB5B11192DF0D6F30051B2D2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DB5B11202DF0D6F30051B2D2;
+			remoteInfo = songbook;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		DB34BC982F25C17900D9BEAD /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
+		DB34BCA02F25C52800D9BEAD /* songbookTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = songbookTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DB5B11212DF0D6F30051B2D2 /* songbook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = songbook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -26,6 +42,11 @@
 			path = pdfs;
 			sourceTree = SOURCE_ROOT;
 		};
+		DB34BCA12F25C52800D9BEAD /* songbookTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = songbookTests;
+			sourceTree = "<group>";
+		};
 		DB5B11232DF0D6F30051B2D2 /* songbook */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -42,6 +63,11 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		DB34BC9D2F25C52800D9BEAD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 		DB5B111E2DF0D6F30051B2D2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
@@ -53,9 +79,11 @@
 		DB5B11182DF0D6F30051B2D2 = {
 			isa = PBXGroup;
 			children = (
+				DB34BC982F25C17900D9BEAD /* TestPlan.xctestplan */,
 				DBAB34D42DF8DDEC00762B66 /* audio */,
 				DB1F1A492DF0F31200D8C4FF /* pdfs */,
 				DB5B11232DF0D6F30051B2D2 /* songbook */,
+				DB34BCA12F25C52800D9BEAD /* songbookTests */,
 				DB5B11222DF0D6F30051B2D2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,6 +92,7 @@
 			isa = PBXGroup;
 			children = (
 				DB5B11212DF0D6F30051B2D2 /* songbook.app */,
+				DB34BCA02F25C52800D9BEAD /* songbookTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -71,6 +100,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		DB34BC9F2F25C52800D9BEAD /* songbookTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DB34BCA62F25C52800D9BEAD /* Build configuration list for PBXNativeTarget "songbookTests" */;
+			buildPhases = (
+				DB34BC9C2F25C52800D9BEAD /* Sources */,
+				DB34BC9D2F25C52800D9BEAD /* Frameworks */,
+				DB34BC9E2F25C52800D9BEAD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DB34BCA52F25C52800D9BEAD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				DB34BCA12F25C52800D9BEAD /* songbookTests */,
+			);
+			name = songbookTests;
+			productName = songbookTests;
+			productReference = DB34BCA02F25C52800D9BEAD /* songbookTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		DB5B11202DF0D6F30051B2D2 /* songbook */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DB5B11322DF0D6F50051B2D2 /* Build configuration list for PBXNativeTarget "songbook" */;
@@ -98,9 +148,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					DB34BC9F2F25C52800D9BEAD = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = DB5B11202DF0D6F30051B2D2;
+					};
 					DB5B11202DF0D6F30051B2D2 = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -121,19 +175,31 @@
 			projectRoot = "";
 			targets = (
 				DB5B11202DF0D6F30051B2D2 /* songbook */,
+				DB34BC9F2F25C52800D9BEAD /* songbookTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		DB34BC9E2F25C52800D9BEAD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
 		DB5B111F2DF0D6F30051B2D2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				DB34BC992F25C17900D9BEAD /* TestPlan.xctestplan in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		DB34BC9C2F25C52800D9BEAD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 		DB5B111D2DF0D6F30051B2D2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
@@ -141,7 +207,65 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		DB34BCA52F25C52800D9BEAD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DB5B11202DF0D6F30051B2D2 /* songbook */;
+			targetProxy = DB34BCA42F25C52800D9BEAD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		DB34BCA72F25C52800D9BEAD /* Debug configuration for PBXNativeTarget "songbookTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.randeria.songbookTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/songbook.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/songbook";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		DB34BCA82F25C52800D9BEAD /* Release configuration for PBXNativeTarget "songbookTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.randeria.songbookTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/songbook.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/songbook";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 		DB5B11302DF0D6F50051B2D2 /* Debug configuration for PBXProject "songbook" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -176,7 +300,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 377369PAFM;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -198,6 +324,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -237,7 +364,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 377369PAFM;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -252,6 +381,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -264,8 +394,10 @@
 				CODE_SIGN_ENTITLEMENTS = songbook/songbook.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 377369PAFM;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = songbook/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "On Wings of the Soul";
@@ -308,8 +440,10 @@
 				CODE_SIGN_ENTITLEMENTS = songbook/songbook.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 377369PAFM;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = songbook/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "On Wings of the Soul";
@@ -347,6 +481,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		DB34BCA62F25C52800D9BEAD /* Build configuration list for PBXNativeTarget "songbookTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DB34BCA72F25C52800D9BEAD /* Debug configuration for PBXNativeTarget "songbookTests" */,
+				DB34BCA82F25C52800D9BEAD /* Release configuration for PBXNativeTarget "songbookTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
 		DB5B111C2DF0D6F30051B2D2 /* Build configuration list for PBXProject "songbook" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

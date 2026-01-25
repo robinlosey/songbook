@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "F7FF0C68-1B6C-4D72-BE03-26663218D211",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:songbook.xcodeproj",
+        "identifier" : "DB34BC9F2F25C52800D9BEAD",
+        "name" : "songbookTests"
+      }
+    }
+  ],
+  "version" : 1
+}

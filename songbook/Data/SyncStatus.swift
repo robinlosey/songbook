@@ -50,6 +50,11 @@ enum SyncKeys {
     static let storedCSVVersion = "storedCSVVersion"     // version of current DB
 }
 
+// notification posted after A/B database swap completes
+extension Notification.Name {
+    static let databaseDidSwitch = Notification.Name("databaseDidSwitch")
+}
+
 // error types for sync operations
 enum SyncError: Error, LocalizedError {
     case networkUnavailable

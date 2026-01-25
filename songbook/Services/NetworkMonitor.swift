@@ -11,6 +11,7 @@ import os.log
 
 @Observable
 final class NetworkMonitor: @unchecked Sendable {
+    static let shared = NetworkMonitor()
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "NetworkMonitor")
     
     private let monitor = NWPathMonitor()
@@ -20,7 +21,7 @@ final class NetworkMonitor: @unchecked Sendable {
     private(set) var isExpensive: Bool = false  // cellular/metered connection
     private(set) var isConstrained: Bool = false // low data mode
     
-    init() {
+    private init() {
         monitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
                 self?.isConnected = path.status == .satisfied

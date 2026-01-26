@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct iOSRootView: View {
+    @AppStorage("appearance") private var appearance = "system"
     @StateObject var viewModel: CategoryListViewModel
     @State private var showSettings = false
 
@@ -16,35 +17,16 @@ struct iOSRootView: View {
             iOSCategoryListView(viewModel: viewModel, showSettings: $showSettings)
         }
         .sheet(isPresented: $showSettings) {
-            // placeholder settings view until Phase 6
-            SettingsPlaceholderView()
+            SettingsView()
         }
+        .preferredColorScheme(colorScheme)
     }
-}
 
-/// temporary placeholder until full settings are built in Phase 6
-struct SettingsPlaceholderView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Label("General", systemImage: "gear")
-                    Label("Downloads", systemImage: "arrow.down.circle")
-                    Label("Storage", systemImage: "internaldrive")
-                }
-
-                Section {
-                    Label("About", systemImage: "info.circle")
-                }
-            }
-            .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
+    private var colorScheme: ColorScheme? {
+        switch appearance {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
         }
     }
 }

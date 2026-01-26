@@ -9,12 +9,17 @@ import SwiftUI
 
 struct SongView: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
+    @AppStorage("hideAudioControlsByDefault") private var hideAudioByDefault = false
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
 
-    @State private var controlsVisible = true
+    @State private var controlsVisible: Bool?  // nil until initialized
     @State private var barsVisible = true
     @State private var showInfoPopover = false
+
+    private var showControls: Bool {
+        controlsVisible ?? !hideAudioByDefault
+    }
     
     // Only show audio toggle if audio is potentially available
     private var showAudioToggle: Bool {
@@ -38,7 +43,7 @@ struct SongView: View {
                 }
             
             // Audio Controls Overlay
-            if controlsVisible && barsVisible {
+            if showControls && barsVisible {
                 AudioPlayerOverlay(song: song)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -56,10 +61,10 @@ struct SongView: View {
                     if showAudioToggle {
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                controlsVisible.toggle()
+                                controlsVisible = !showControls
                             }
                         } label: {
-                            Image(systemName: controlsVisible ? "music.note" : "music.note.list")
+                            Image(systemName: showControls ? "music.note" : "music.note.list")
                         }
                     }
                     

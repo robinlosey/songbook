@@ -15,7 +15,7 @@ class SongListViewModel: ObservableObject {
     enum SortOption: String, CaseIterable, Identifiable {
         case title = "title"
         case artist = "artist"
-        case firstLine = "first line"
+        case firstLine = "firstLine"
 
         var id: String { self.rawValue }
 
@@ -40,10 +40,19 @@ class SongListViewModel: ObservableObject {
                 return String((song.first_line?.first ?? "#").uppercased())
             }
         }
+
+        // display name for UI
+        var displayName: String {
+            switch self {
+            case .title: return "Title"
+            case .artist: return "Artist"
+            case .firstLine: return "First Line"
+            }
+        }
     }
 
     @Published var songs: [Song] = []
-    @Published var sortBy: SortOption = .title
+    @Published var sortBy: SortOption
     @Published var onlyFavorites: Bool = false
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
@@ -69,6 +78,10 @@ class SongListViewModel: ObservableObject {
     init(dataManager: DataManager = .shared, category: Category? = nil) {
         self.dataManager = dataManager
         self.category = category
+
+        // initialize sort from user default
+        let defaultSortKey = UserDefaults.standard.string(forKey: "defaultSortOrder") ?? "title"
+        self.sortBy = SortOption(rawValue: defaultSortKey) ?? .title
 
         // observe changes to sortBy
         $sortBy

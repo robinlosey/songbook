@@ -95,7 +95,7 @@ struct SortMenuButton: View {
         Menu {
             Picker("Sort by", selection: $sortBy) {
                 ForEach(SongListViewModel.SortOption.allCases) { option in
-                    Label(option.rawValue.capitalized, systemImage: iconFor(option))
+                    Label(option.displayName, systemImage: iconFor(option))
                         .tag(option)
                 }
             }

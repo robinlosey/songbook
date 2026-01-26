@@ -8,10 +8,19 @@
 import SwiftUI
 
 struct iPadRootView: View {
+    @AppStorage("appearance") private var appearance = "system"
     @ObservedObject var viewModel: CategoryListViewModel
     @State private var showPanel = true
     @State private var selectedSong: Song?
     @State private var showSettings = false
+
+    private var colorScheme: ColorScheme? {
+        switch appearance {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -66,8 +75,9 @@ struct iPadRootView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsPlaceholderView()
+            SettingsView()
         }
+        .preferredColorScheme(colorScheme)
         .gesture(
             // swipe from left edge to open panel
             DragGesture(minimumDistance: 20)

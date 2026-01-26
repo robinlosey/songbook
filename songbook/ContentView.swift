@@ -39,5 +39,4 @@ struct ContentView: View {
         .environment(\.managedObjectContext, DataManager.preview.container.viewContext)
         .environment(SyncManager.shared)
         .environmentObject(AudioPlayerViewModel())
-        .previewDevice(PreviewDevice(rawValue: "iPad Pro (12.9-inch)"))
 }

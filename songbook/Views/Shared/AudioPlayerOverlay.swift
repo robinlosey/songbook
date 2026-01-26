@@ -2,7 +2,7 @@
 //  AudioPlayerOverlay.swift
 //  songbook
 //
-//  Extracted from SongView - audio player controls overlay and toolbar buttons.
+//  Audio player controls overlay with glass styling.
 //
 
 import SwiftUI
@@ -13,52 +13,14 @@ extension TimeInterval {
     func formattedTime() -> String {
         let minutes = Int(self) / 60
         let seconds = Int(self) % 60
-        return String(format: "%2d:%02d", minutes, seconds)
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }
 
-// MARK: - Glass Button Style
-
-/// custom button style with glass material background
-struct ClusterButtonStyle: ButtonStyle {
-    var isCapsule: Bool = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaledToFill()
-            .padding(12)
-            .background {
-                if isCapsule {
-                    Capsule()
-                        .fill(.thinMaterial)
-                    Capsule()
-                        .fill(.accent.opacity(0.2))
-                } else {
-                    Circle()
-                        .fill(.thinMaterial)
-                    Circle()
-                        .fill(.accent.opacity(0.2))
-                }
-            }
-            .opacity(configuration.isPressed ? 0.7 : 1)
-            .overlay {
-                if isCapsule {
-                    Capsule()
-                        .stroke()
-                        .opacity(0.3)
-                } else {
-                    Circle()
-                        .stroke()
-                        .opacity(0.3)
-                }
-            }
-    }
-}
-
-// MARK: - Audio Info Overlay
+// MARK: - Audio Player Overlay
 
 /// bottom overlay showing audio controls based on availability state
-struct AudioInfoOverlay: View {
+struct AudioPlayerOverlay: View {
     @EnvironmentObject var audioPlayer: AudioPlayerViewModel
     @ObservedObject var song: Song
     @State private var sliderValue: Double = 0
@@ -71,12 +33,16 @@ struct AudioInfoOverlay: View {
             switch audioPlayer.audioAvailability {
             case .available:
                 audioPlayerControls
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             case .downloadable:
                 downloadButton
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             case .downloading:
                 downloadingIndicator
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             case .notFound:
                 noAudioMessage
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             case .unknown:
                 checkingIndicator
             }
@@ -87,7 +53,7 @@ struct AudioInfoOverlay: View {
         }
         .onChange(of: audioPlayer.currentTime) {
             if !isSeeking {
-                withAnimation {
+                withAnimation(.linear(duration: 0.1)) {
                     sliderValue = audioPlayer.currentTime
                 }
             }
@@ -97,8 +63,9 @@ struct AudioInfoOverlay: View {
     // MARK: - Audio Player Controls
 
     private var audioPlayerControls: some View {
-        VStack {
-            HStack {
+        VStack(spacing: AppSpacing.medium) {
+            // Slider Row
+            HStack(spacing: AppSpacing.medium) {
                 Slider(
                     value: $sliderValue,
                     in: 0...max(audioPlayer.duration, 0.01),
@@ -109,22 +76,33 @@ struct AudioInfoOverlay: View {
                         }
                     }
                 )
+                .tint(.accent)
 
                 Button {
                     audioPlayer.toggleRepeat()
                 } label: {
-                    Image(audioPlayer.repeatMode == .off ? "custom.repeat.1.rectangle" : "custom.repeat.1.rectangle.fill")
-                        .font(.title)
+                    Image(systemName: audioPlayer.repeatMode == .off ? "repeat" : "repeat.1")
+                        .font(AppFont.title3)
+                        .foregroundStyle(audioPlayer.repeatMode == .off ? Color.secondary : Color.accentColor)
+                        .padding(6)
+                        .background(
+                            audioPlayer.repeatMode == .off ? Color.clear : Color.accentColor.opacity(0.15)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
             }
+            
+            // Controls Row
             HStack {
-                Text("\(audioPlayer.currentTime.formattedTime())")
-                    .font(.headline)
+                Text(audioPlayer.currentTime.formattedTime())
+                    .font(AppFont.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 45, alignment: .leading)
 
                 Spacer()
 
-                HStack(alignment: .center, spacing: 19) {
+                HStack(alignment: .center, spacing: 24) {
                     Button {
                         audioPlayer.skipForward(by: -5.0)
                     } label: {
@@ -134,7 +112,9 @@ struct AudioInfoOverlay: View {
                     Button {
                         audioPlayer.togglePlayPause()
                     } label: {
-                        Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                        Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.primary, .accent)
                     }
 
                     Button {
@@ -144,21 +124,25 @@ struct AudioInfoOverlay: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .font(.title)
+                .font(.title2)
+                .foregroundStyle(.primary)
 
                 Spacer()
 
                 Text("-\(audioPlayer.timeLeft.formattedTime())")
-                    .font(.headline)
+                    .font(AppFont.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 45, alignment: .trailing)
             }
         }
-        .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.thinMaterial)
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.accent.opacity(0.1))
-        }
+        .padding(AppSpacing.large)
+        .adaptiveGlass()
+        .clipShape(RoundedRectangle(cornerRadius: AppCornerRadius.extraLarge))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppCornerRadius.extraLarge)
+                .strokeBorder(Color.accentColor.opacity(0.15), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
     }
 
     // MARK: - Download Button
@@ -169,15 +153,19 @@ struct AudioInfoOverlay: View {
                 await audioPlayer.downloadAndSetup(song: song)
             }
         } label: {
-            Label("Download Audio", systemImage: "arrow.down.circle")
-                .font(.headline)
-                .padding()
+            HStack {
+                Image(systemName: "arrow.down.circle.fill")
+                Text("Download Audio")
+            }
+            .font(AppFont.headline)
+            .padding(.horizontal, AppSpacing.large)
+            .padding(.vertical, 12)
         }
-        .buttonStyle(.borderedProminent)
-        .background {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.thinMaterial)
-        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.accent)
+        .background(Color.accentColor.opacity(0.1))
+        .adaptiveGlass()
+        .clipShape(Capsule())
     }
 
     // MARK: - Downloading Indicator
@@ -185,29 +173,29 @@ struct AudioInfoOverlay: View {
     private var downloadingIndicator: some View {
         HStack(spacing: 12) {
             ProgressView()
-            Text("Downloading audio...")
-                .font(.headline)
+            Text("Downloading...")
+                .font(AppFont.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.thinMaterial)
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.accent.opacity(0.1))
-        }
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.vertical, 12)
+        .adaptiveGlass()
+        .clipShape(Capsule())
     }
 
     // MARK: - No Audio Message
 
     private var noAudioMessage: some View {
-        Label("No audio available", systemImage: "speaker.slash")
-            .font(.headline)
-            .foregroundStyle(.secondary)
-            .padding()
-            .background {
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(.thinMaterial)
-            }
+        HStack(spacing: 8) {
+            Image(systemName: "speaker.slash")
+            Text("No audio available")
+        }
+        .font(AppFont.subheadline)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.vertical, 10)
+        .adaptiveGlass()
+        .clipShape(Capsule())
     }
 
     // MARK: - Checking Indicator
@@ -215,83 +203,10 @@ struct AudioInfoOverlay: View {
     private var checkingIndicator: some View {
         HStack(spacing: 12) {
             ProgressView()
-            Text("Checking audio...")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .controlSize(.small)
         }
-        .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(.thinMaterial)
-        }
-    }
-}
-
-// MARK: - Button Cluster (Toolbar)
-
-/// toolbar button cluster for favorite toggle and audio controls visibility
-struct ButtonCluster: View {
-    @EnvironmentObject var audioPlayer: AudioPlayerViewModel
-    @ObservedObject var song: Song
-    var toggleFavoriteAction: () -> Void
-    var controlsVisible: Binding<Bool>
-
-    // only show audio toggle when audio is potentially available
-    private var showAudioToggle: Bool {
-        switch audioPlayer.audioAvailability {
-        case .available, .downloadable, .downloading, .unknown:
-            return true
-        case .notFound:
-            return false
-        }
-    }
-
-    var body: some View {
-        HStack(spacing: 15) {
-            Button(action: toggleFavoriteAction) {
-                Image(systemName: song.isFavorite ? "star.fill" : "star")
-                    .padding(8)
-                    .contentShape(Rectangle())
-            }
-
-            if showAudioToggle {
-                Button {
-                    withAnimation {
-                        controlsVisible.wrappedValue.toggle()
-                    }
-                } label: {
-                    Group {
-                        if controlsVisible.wrappedValue {
-                            Image(systemName: "music.note")
-                        } else {
-                            Image("custom.music.note.slash")
-                        }
-                    }
-                    .padding(8)
-                    .contentShape(Rectangle())
-                }
-            }
-        }
-        .font(.title2)
-    }
-}
-
-// MARK: - Category Tag
-
-/// single category tag with glass styling
-struct CategoryTag: View {
-    let category: Category?
-
-    var body: some View {
-        Text(category?.name ?? "Unknown Category")
-            .font(.caption)
-            .padding()
-            .background {
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(Color.accentColor.opacity(0.1))
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 15))
+        .padding(12)
+        .adaptiveGlass()
+        .clipShape(Circle())
     }
 }

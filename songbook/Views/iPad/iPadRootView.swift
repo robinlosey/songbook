@@ -14,52 +14,54 @@ struct iPadRootView: View {
     @State private var showSettings = false
 
     var body: some View {
-        ZStack(alignment: .leading) {
-            // full-screen PDF (or empty state)
-            Group {
-                if let song = selectedSong {
-                    SongView(song: song) {
-                        withAnimation {
-                            song.isFavorite.toggle()
-                            try? song.managedObjectContext?.save()
+        NavigationStack {
+            ZStack(alignment: .leading) {
+                // full-screen PDF (or empty state)
+                Group {
+                    if let song = selectedSong {
+                        SongView(song: song) {
+                            withAnimation {
+                                song.isFavorite.toggle()
+                                try? song.managedObjectContext?.save()
+                            }
                         }
+                    } else {
+                        iPadEmptyStateView(showPanel: $showPanel)
                     }
-                } else {
-                    iPadEmptyStateView(showPanel: $showPanel)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                // dim scrim when panel is open
+                if showPanel {
+                    Color.black.opacity(0.2)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                showPanel = false
+                            }
+                        }
+                }
+
+                // floating navigation panel
+                if showPanel {
+                    FloatingNavigationPanel(
+                        viewModel: viewModel,
+                        selectedSong: $selectedSong,
+                        showPanel: $showPanel,
+                        showSettings: $showSettings
+                    )
+                    .transition(.move(edge: .leading).combined(with: .opacity))
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            // dim scrim when panel is open
-            if showPanel {
-                Color.black.opacity(0.2)
-                    .ignoresSafeArea()
-                    .onTapGesture {
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
                         withAnimation(.easeInOut(duration: 0.25)) {
-                            showPanel = false
+                            showPanel.toggle()
                         }
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
                     }
-            }
-
-            // floating navigation panel
-            if showPanel {
-                FloatingNavigationPanel(
-                    viewModel: viewModel,
-                    selectedSong: $selectedSong,
-                    showPanel: $showPanel,
-                    showSettings: $showSettings
-                )
-                .transition(.move(edge: .leading).combined(with: .opacity))
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        showPanel.toggle()
-                    }
-                } label: {
-                    Image(systemName: "line.3.horizontal")
                 }
             }
         }

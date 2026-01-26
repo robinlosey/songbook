@@ -50,7 +50,7 @@ struct AlphabetIndexView: View {
                     let (scale, offset) = magnificationEffect(for: index)
 
                     Text(key)
-                        .font(.system(size: 12, weight: .bold))
+                        .font(AppFont.caption.weight(.bold))
                         .foregroundStyle(.accent)
                         .frame(width: 30, height: rowHeight)
                         .contentShape(Rectangle())

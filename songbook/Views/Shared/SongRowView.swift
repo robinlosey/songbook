@@ -2,36 +2,17 @@
 //  SongRowView.swift
 //  songbook
 //
-//  Extracted from SongListView - reusable song row component.
+//  Reusable song row component with configurable tags.
 //
 
 import SwiftUI
 
-/// displays category tags in a horizontal scroll (will be refactored to wrap in Phase 4)
-struct TagGroupView: View {
-    var tags: [Category]
-
-    var body: some View {
-        if tags.isEmpty {
-            EmptyView()
-        } else {
-            LazyHStack(spacing: 8) {
-                ForEach(tags) { tag in
-                    Text(tag.name ?? "Untitled Tag")
-                        .font(.caption)
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 8)
-                        .background(Color.accentColor.opacity(0.2))
-                        .clipShape(Capsule())
-                }
-            }
-        }
-    }
-}
-
 struct SongRowView: View {
     @ObservedObject var song: Song
     var toggleFavoriteAction: () -> Void
+    
+    // Configurable setting for showing tags
+    @AppStorage("showCategoryTags") private var showTags = true
 
     private var sortedCategories: [Category] {
         (song.categories?.allObjects as? [Category])?.sorted {
@@ -40,29 +21,30 @@ struct SongRowView: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: AppSpacing.medium) {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
                     .foregroundStyle(song.isFavorite ? Color.accentColor : .secondary)
             }
             .buttonStyle(.plain)
+            .padding(.top, 2) // Align with title text
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(song.title ?? "Untitled Song")
-                    .font(.headline)
+                    .font(AppFont.headline)
+                    .foregroundStyle(.primary)
+                
                 Text(song.artist ?? "Unknown Artist")
-                    .font(.subheadline)
+                    .font(AppFont.subheadline)
                     .foregroundStyle(.secondary)
-                Text(song.first_line ?? "")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
 
-                // category tags (horizontal scroll for now, will wrap in Phase 4)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    TagGroupView(tags: sortedCategories)
+                if showTags && !sortedCategories.isEmpty {
+                    TagFlowView(tags: sortedCategories)
+                        .padding(.top, 2)
                 }
             }
         }
+        .padding(.vertical, 4)
     }
 }
 

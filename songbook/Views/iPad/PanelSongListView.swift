@@ -84,40 +84,57 @@ struct PanelSongRow: View {
     @ObservedObject var song: Song
     let isSelected: Bool
     let toggleFavorite: () -> Void
+    
+    @AppStorage("showCategoryTags") private var showTags = true
+    
+    private var sortedCategories: [Category] {
+        (song.categories?.allObjects as? [Category])?.sorted {
+            ($0.name ?? "") < ($1.name ?? "")
+        } ?? []
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: AppSpacing.medium) {
             Button(action: toggleFavorite) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
                     .foregroundStyle(song.isFavorite ? Color.accentColor : .secondary)
-                    .font(.subheadline)
+                    .font(AppFont.subheadline)
             }
             .buttonStyle(.plain)
+            .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(song.title ?? "Untitled")
-                    .font(.subheadline)
+                    .font(AppFont.subheadline)
                     .fontWeight(isSelected ? .semibold : .regular)
                     .lineLimit(1)
+                    .foregroundStyle(.primary)
+                
                 Text(song.artist ?? "Unknown")
-                    .font(.caption)
+                    .font(AppFont.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                
+                if showTags && !sortedCategories.isEmpty {
+                    TagFlowView(tags: sortedCategories)
+                        .padding(.top, 2)
+                }
             }
 
             Spacer()
 
             if isSelected {
                 Image(systemName: "checkmark")
-                    .font(.caption)
+                    .font(AppFont.caption)
                     .foregroundStyle(.accent)
+                    .padding(.top, 2)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .background {
             if isSelected {
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: AppCornerRadius.small)
                     .fill(Color.accentColor.opacity(0.1))
                     .padding(.horizontal, -8)
             }

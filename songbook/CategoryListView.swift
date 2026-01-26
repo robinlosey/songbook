@@ -8,30 +8,7 @@
 import SwiftUI
 import CoreData
 
-
-struct CategoryRowView: View {
-    let name: String?
-    let count: Int?  // nil means loading
-
-    var body: some View {
-        HStack {
-            Text(name ?? "Unknown Category")
-                .font(.headline)
-            Spacer()
-            if let count = count {
-                Text("\(count) Songs")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-            } else {
-                // Show spinner while loading
-                ProgressView()
-                    .scaleEffect(0.8)
-                    .frame(width: 20, height: 20)
-            }
-        }
-        .padding()
-    }
-}
+// CategoryRowView is now in Views/Shared/CategoryRowView.swift
 
 struct CategoryListView: View {
     @StateObject var viewModel: CategoryListViewModel

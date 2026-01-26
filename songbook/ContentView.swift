@@ -24,29 +24,20 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Placeholder Views (to be implemented in Phase 2 & 3)
+// MARK: - iPad Placeholder (to be implemented in Phase 3)
 
 /// placeholder for iPad layout - will be replaced with floating panel design
 struct iPadRootView: View {
-    @StateObject var viewModel: CategoryListViewModel
+    @ObservedObject var viewModel: CategoryListViewModel
 
     var body: some View {
-        // for now, use the same view as iPhone
+        // for now, use the iPhone view
         // Phase 3 will implement the floating panel design
-        CategoryListView(viewModel: viewModel)
+        iOSRootView(viewModel: viewModel)
     }
 }
 
-/// placeholder for iPhone layout - will be replaced with polished stack navigation
-struct iOSRootView: View {
-    @StateObject var viewModel: CategoryListViewModel
-
-    var body: some View {
-        // for now, use the existing view
-        // Phase 2 will implement the polished iPhone navigation
-        CategoryListView(viewModel: viewModel)
-    }
-}
+// iOSRootView is now in Views/iOS/iOSRootView.swift
 
 #Preview("iPhone") {
     ContentView(viewModel: PreviewCategoryListViewModel())

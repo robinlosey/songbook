@@ -24,30 +24,20 @@ struct ContentView: View {
     }
 }
 
-// MARK: - iPad Placeholder (to be implemented in Phase 3)
-
-/// placeholder for iPad layout - will be replaced with floating panel design
-struct iPadRootView: View {
-    @ObservedObject var viewModel: CategoryListViewModel
-
-    var body: some View {
-        // for now, use the iPhone view
-        // Phase 3 will implement the floating panel design
-        iOSRootView(viewModel: viewModel)
-    }
-}
-
 // iOSRootView is now in Views/iOS/iOSRootView.swift
+// iPadRootView is now in Views/iPad/iPadRootView.swift
 
 #Preview("iPhone") {
     ContentView(viewModel: PreviewCategoryListViewModel())
         .environment(\.managedObjectContext, DataManager.preview.container.viewContext)
         .environment(SyncManager.shared)
+        .environmentObject(AudioPlayerViewModel())
 }
 
 #Preview("iPad") {
     ContentView(viewModel: PreviewCategoryListViewModel())
         .environment(\.managedObjectContext, DataManager.preview.container.viewContext)
         .environment(SyncManager.shared)
+        .environmentObject(AudioPlayerViewModel())
         .previewDevice(PreviewDevice(rawValue: "iPad Pro (12.9-inch)"))
 }

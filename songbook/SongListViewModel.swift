@@ -114,11 +114,15 @@ class SongListViewModel: ObservableObject {
         let categoryID = category?.objectID
         let categoryName = category?.name
 
-        // check query cache first
-        if let cached = dataManager.queryCache.getCachedSongs(for: categoryID) {
+        // check query cache first (skip when searching since it changes frequently)
+        if searchText.isEmpty,
+           let cached = dataManager.queryCache.getCachedSongs(for: categoryID, onlyFavorites: onlyFavorites) {
             songs = cached
             isLoading = false
-            Self.logger.debug("Using cached songs (\(cached.count) items)")
+            Self.logger
+                .debug(
+                    "Using cached songs (\(cached.count) items, favorites: \(self.onlyFavorites))"
+                )
             return
         }
 
@@ -158,7 +162,10 @@ class SongListViewModel: ObservableObject {
             }
 
             songs = withPDF
-            dataManager.queryCache.setCachedSongs(withPDF, for: categoryID)
+            // only cache when not searching (search results are too transient)
+            if searchText.isEmpty {
+                dataManager.queryCache.setCachedSongs(withPDF, for: categoryID, onlyFavorites: onlyFavorites)
+            }
 
             Self.logger.info("Fetched \(self.songs.count) songs with PDFs for category: '\(categoryName ?? "All Songs")'")
         } catch {

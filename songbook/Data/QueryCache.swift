@@ -35,19 +35,25 @@ final class QueryCache {
 
     // MARK: - Song Cache
 
-    func getCachedSongs(for categoryID: NSManagedObjectID?) -> [Song]? {
-        let key = categoryID?.uriRepresentation().absoluteString ?? "all"
+    /// builds cache key from category + filter state
+    private func songCacheKey(for categoryID: NSManagedObjectID?, onlyFavorites: Bool) -> String {
+        let categoryKey = categoryID?.uriRepresentation().absoluteString ?? "all"
+        return onlyFavorites ? "\(categoryKey):favorites" : categoryKey
+    }
+
+    func getCachedSongs(for categoryID: NSManagedObjectID?, onlyFavorites: Bool = false) -> [Song]? {
+        let key = songCacheKey(for: categoryID, onlyFavorites: onlyFavorites)
         guard let cached = songCache[key], cached.isValid(duration: cacheValidDuration) else {
             return nil
         }
-        Self.logger.debug("Cache HIT for songs (category: \(key))")
+        Self.logger.debug("Cache HIT for songs (key: \(key))")
         return cached.value
     }
 
-    func setCachedSongs(_ songs: [Song], for categoryID: NSManagedObjectID?) {
-        let key = categoryID?.uriRepresentation().absoluteString ?? "all"
+    func setCachedSongs(_ songs: [Song], for categoryID: NSManagedObjectID?, onlyFavorites: Bool = false) {
+        let key = songCacheKey(for: categoryID, onlyFavorites: onlyFavorites)
         songCache[key] = CachedResult(value: songs, timestamp: Date())
-        Self.logger.debug("Cached \(songs.count) songs for category: \(key)")
+        Self.logger.debug("Cached \(songs.count) songs (key: \(key))")
     }
 
     // MARK: - Category Cache

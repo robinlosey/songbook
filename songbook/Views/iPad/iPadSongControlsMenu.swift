@@ -164,9 +164,8 @@ struct iPadAudioControlSection: View {
                 HStack(spacing: 30) {
                     Button { audioPlayer.skipForward(by: -5) } label: { Image(systemName: "gobackward.5") }
                     Button { audioPlayer.togglePlayPause() } label: {
-                        Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        Image(systemName: audioPlayer.isPlaying ? "pause" : "play")
                             .font(.system(size: 40))
-                            .foregroundStyle(AppColor.primary)
                     }
                     Button { audioPlayer.skipForward(by: 5) } label: { Image(systemName: "goforward.5") }
                 }

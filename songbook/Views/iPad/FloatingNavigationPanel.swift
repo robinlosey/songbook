@@ -42,27 +42,11 @@ struct FloatingNavigationPanel: View {
                 }
             }
             .scrollContentBackground(.hidden)
-//            .toolbar {
-//                ToolbarItem(placement: .topBarLeading) {
-//                    Button {
-//                        withAnimation(.easeInOut(duration: 0.25)) {
-//                            showPanel = false
-//                        }
-//                    } label: {
-//                        Image(systemName: "sidebar.left")
-//                            .foregroundStyle(AppColor.color1)
-//                    }
-//                }
-//            }
         }
         .frame(width: panelWidth)
         .frame(maxHeight: maxPanelHeight)
-        .adaptiveGlass()
+        .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .strokeBorder(AppColor.color1.opacity(0.15), lineWidth: 1)
-        )
         .shadow(color: .black.opacity(0.15), radius: 30, x: 0, y: 15)
         .padding(.leading, 24)
         .offset(x: dragOffset)

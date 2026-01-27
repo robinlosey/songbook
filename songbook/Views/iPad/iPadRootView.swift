@@ -48,50 +48,32 @@ struct iPadRootView: View {
             HStack(spacing: 10) {
                 if let song = selectedSong {
                     // favorite toggle
-                    Button {
+                    GlassButton(
+                        icon: song.isFavorite ? "star.fill" : "star",
+                        isActive: song.isFavorite
+                    ) {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                             song.isFavorite.toggle()
                             try? song.managedObjectContext?.save()
                         }
-                    } label: {
-                        Image(systemName: song.isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(song.isFavorite ? AppColor.primary : .primary.opacity(0.7))
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial.opacity(0.9))
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
                     }
                     .contentTransition(.symbolEffect(.replace))
 
                     // toggle audio overlay (only if audio available)
                     if audioPlayer.audioAvailability == .available {
-                        Button {
+                        GlassButton(
+                            icon: showAudioOverlay ? "waveform.circle.fill" : "waveform.circle",
+                            isActive: showAudioOverlay
+                        ) {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showAudioOverlay.toggle()
                             }
-                        } label: {
-                            Image(systemName: showAudioOverlay ? "waveform.circle.fill" : "waveform.circle")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundStyle(showAudioOverlay ? AppColor.primary : .primary.opacity(0.7))
-                                .frame(width: 40, height: 40)
-                                .background(.ultraThinMaterial.opacity(0.9))
-                                .clipShape(Circle())
-                                .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
                         }
                     }
 
                     // song info
-                    Button {
+                    GlassButton(icon: "info.circle") {
                         showSongControls = true
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(.primary.opacity(0.7))
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial.opacity(0.9))
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
                     }
                     .popover(isPresented: $showSongControls) {
                         iPadSongControlsMenu(
@@ -105,20 +87,13 @@ struct iPadRootView: View {
                                 }
                             }
                         )
+                        .environmentObject(audioPlayer)
                     }
                 }
 
                 // settings always visible
-                Button {
+                GlassButton(icon: "gearshape") {
                     showSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.primary.opacity(0.7))
-                        .frame(width: 40, height: 40)
-                        .background(.ultraThinMaterial.opacity(0.9))
-                        .clipShape(Circle())
-                        .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
                 }
             }
             .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
@@ -154,9 +129,7 @@ struct iPadRootView: View {
                     .foregroundStyle(AppColor.primary)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(.ultraThinMaterial.opacity(0.9))
-                    .clipShape(Capsule())
-                    .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
+                    .adaptiveGlass(.interactive)
                     .shadow(color: .black.opacity(0.15), radius: 12, x: 2, y: 4)
                 }
                 .padding(.leading, 20)
@@ -235,7 +208,6 @@ struct iPadEmptyStateView: View {
 
 // MARK: - Persistent Audio Overlay
 
-/// floating audio bar for practice sessions - stays visible for easy scrubbing
 struct iPadAudioOverlay: View {
     @ObservedObject var song: Song
     @Binding var isShowing: Bool
@@ -250,10 +222,11 @@ struct iPadAudioOverlay: View {
                 audioPlayer.togglePlayPause()
             } label: {
                 Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(AppColor.primary)
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 48, height: 48)
             }
+            .buttonStyle(.plain)
 
             // time & scrubber
             VStack(spacing: 4) {
@@ -292,24 +265,42 @@ struct iPadAudioOverlay: View {
                 }
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 36, height: 36)
                     .background(.primary.opacity(0.08))
                     .clipShape(Circle())
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
-        .background(.ultraThinMaterial)
-        .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
+        .adaptiveGlass()
         .shadow(color: .black.opacity(0.2), radius: 20, y: 8)
         .padding(.horizontal, 40)
         .padding(.bottom, 30)
         .onAppear { sliderValue = audioPlayer.currentTime }
         .onChange(of: audioPlayer.currentTime) { _, newValue in
             if !isSeeking { sliderValue = newValue }
+        }
+    }
+}
+
+// MARK: - Glass Button
+
+/// circular glass button with liquid glass on iOS 26+
+struct GlassButton: View {
+    let icon: String
+    var isActive: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(isActive ? AppColor.primary : .primary.opacity(0.7))
+                .frame(width: 40, height: 40)
+                .adaptiveGlassCircle(.interactive)
         }
     }
 }

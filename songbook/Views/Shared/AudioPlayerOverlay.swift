@@ -112,9 +112,8 @@ struct AudioPlayerOverlay: View {
                     Button {
                         audioPlayer.togglePlayPause()
                     } label: {
-                        Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        Image(systemName: audioPlayer.isPlaying ? "pause" : "play")
                             .font(.system(size: 44))
-                            .foregroundStyle(.primary, AppColor.color1)
                     }
 
                     Button {
@@ -136,19 +135,7 @@ struct AudioPlayerOverlay: View {
             }
         }
         .padding(AppSpacing.large)
-        .adaptiveGlass()
-        .clipShape(RoundedRectangle(cornerRadius: AppCornerRadius.extraLarge))
-        .overlay(
-            RoundedRectangle(cornerRadius: AppCornerRadius.extraLarge)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [AppColor.color1.opacity(0.3), AppColor.color2.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
+        .adaptiveGlassPanel(cornerRadius: AppCornerRadius.extraLarge)
         .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 10)
         .shadow(color: AppColor.color1.opacity(0.05), radius: 5, x: 0, y: -2)
     }
@@ -171,9 +158,7 @@ struct AudioPlayerOverlay: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(AppColor.color1)
-        .background(Color.accentColor.opacity(0.1))
-        .adaptiveGlass()
-        .clipShape(Capsule())
+        .adaptiveGlass(.interactive, tint: AppColor.primary)
     }
 
     // MARK: - Downloading Indicator
@@ -188,7 +173,6 @@ struct AudioPlayerOverlay: View {
         .padding(.horizontal, AppSpacing.large)
         .padding(.vertical, 12)
         .adaptiveGlass()
-        .clipShape(Capsule())
     }
 
     // MARK: - No Audio Message
@@ -203,7 +187,6 @@ struct AudioPlayerOverlay: View {
         .padding(.horizontal, AppSpacing.large)
         .padding(.vertical, 10)
         .adaptiveGlass()
-        .clipShape(Capsule())
     }
 
     // MARK: - Checking Indicator
@@ -214,7 +197,6 @@ struct AudioPlayerOverlay: View {
                 .controlSize(.small)
         }
         .padding(12)
-        .adaptiveGlass()
-        .clipShape(Circle())
+        .adaptiveGlassCircle()
     }
 }

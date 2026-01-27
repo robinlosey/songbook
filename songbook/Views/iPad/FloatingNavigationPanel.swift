@@ -16,72 +16,70 @@ struct FloatingNavigationPanel: View {
     @State private var navigationPath = NavigationPath()
     @State private var dragOffset: CGFloat = 0
 
-    private let panelWidth: CGFloat = 320
+    private let panelWidth: CGFloat = 360
+    private let maxPanelHeight: CGFloat = 700
 
     var body: some View {
-        VStack(spacing: 0) {
-            // navigation content
-            NavigationStack(path: $navigationPath) {
-                PanelCategoryListView(
-                    viewModel: viewModel,
-                    navigationPath: $navigationPath
+        NavigationStack(path: $navigationPath) {
+            PanelCategoryListView(
+                viewModel: viewModel,
+                navigationPath: $navigationPath
+            )
+            .navigationDestination(for: Category.self) { category in
+                PanelSongListView(
+                    category: category,
+                    selectedSong: $selectedSong,
+                    showPanel: $showPanel
                 )
-                .navigationDestination(for: Category.self) { category in
+            }
+            .navigationDestination(for: String.self) { identifier in
+                if identifier == "all" {
                     PanelSongListView(
-                        category: category,
+                        category: nil,
                         selectedSong: $selectedSong,
                         showPanel: $showPanel
                     )
                 }
-                .navigationDestination(for: String.self) { identifier in
-                    // "all" = All Songs
-                    if identifier == "all" {
-                        PanelSongListView(
-                            category: nil,
-                            selectedSong: $selectedSong,
-                            showPanel: $showPanel
-                        )
-                    }
-                }
             }
-
-            Divider()
-
-            // fixed footer with settings
-            Button {
-                showSettings = true
-            } label: {
-                Label("Settings", systemImage: "gear")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
+            .scrollContentBackground(.hidden)
+//            .toolbar {
+//                ToolbarItem(placement: .topBarLeading) {
+//                    Button {
+//                        withAnimation(.easeInOut(duration: 0.25)) {
+//                            showPanel = false
+//                        }
+//                    } label: {
+//                        Image(systemName: "sidebar.left")
+//                            .foregroundStyle(AppColor.color1)
+//                    }
+//                }
+//            }
         }
         .frame(width: panelWidth)
-        .frame(maxHeight: .infinity)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.2), radius: 20, x: 5, y: 0)
-        .padding(.leading, 16)
-        .padding(.vertical, 16)
+        .frame(maxHeight: maxPanelHeight)
+        .adaptiveGlass()
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .strokeBorder(AppColor.color1.opacity(0.15), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 30, x: 0, y: 15)
+        .padding(.leading, 24)
         .offset(x: dragOffset)
         .gesture(
             DragGesture()
                 .onChanged { value in
-                    // only allow dragging left (to close)
                     if value.translation.width < 0 {
                         dragOffset = value.translation.width
                     }
                 }
                 .onEnded { value in
-                    // if dragged far enough left, close panel
                     if value.translation.width < -100 {
                         withAnimation(.easeInOut(duration: 0.25)) {
                             showPanel = false
                         }
                     }
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    withAnimation(.spring()) {
                         dragOffset = 0
                     }
                 }

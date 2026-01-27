@@ -56,7 +56,8 @@ struct PanelSongListView: View {
         .listStyle(.plain)
         .navigationTitle(category?.name ?? "All Songs")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $viewModel.searchText, prompt: "Search...")
+        .scrollContentBackground(.hidden)
+        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search...")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 8) {
@@ -97,7 +98,7 @@ struct PanelSongRow: View {
         HStack(alignment: .top, spacing: AppSpacing.medium) {
             Button(action: toggleFavorite) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
-                    .foregroundStyle(song.isFavorite ? Color.accentColor : .secondary)
+                    .foregroundStyle(song.isFavorite ? AppColor.color1 : .secondary)
                     .font(AppFont.subheadline)
             }
             .buttonStyle(.plain)
@@ -114,11 +115,6 @@ struct PanelSongRow: View {
                     .font(AppFont.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                
-                if showTags && !sortedCategories.isEmpty {
-                    TagFlowView(tags: sortedCategories)
-                        .padding(.top, 2)
-                }
             }
 
             Spacer()
@@ -126,7 +122,7 @@ struct PanelSongRow: View {
             if isSelected {
                 Image(systemName: "checkmark")
                     .font(AppFont.caption)
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(AppColor.color1)
                     .padding(.top, 2)
             }
         }
@@ -135,7 +131,7 @@ struct PanelSongRow: View {
         .background {
             if isSelected {
                 RoundedRectangle(cornerRadius: AppCornerRadius.small)
-                    .fill(Color.accentColor.opacity(0.1))
+                    .fill(AppColor.color1.opacity(0.1))
                     .padding(.horizontal, -8)
             }
         }

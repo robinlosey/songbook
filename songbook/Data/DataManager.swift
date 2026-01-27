@@ -57,7 +57,7 @@ final class DataManager: @unchecked Sendable {
 
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        let configPath = "config_test"
+        let configPath = "config"
         guard let path = Bundle.main.path(forResource: configPath, ofType: "plist") else {
             fatalError("Could not find config at \(configPath).plist")
         }

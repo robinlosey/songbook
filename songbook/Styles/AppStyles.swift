@@ -145,17 +145,73 @@ struct MeshBackground: View {
     }
 }
 
-// MARK: - Adaptive Glass Modifier (iOS 26 Ready)
+// MARK: - Adaptive Glass Modifier (Liquid Glass on iOS 26+)
 
-struct AdaptiveGlassModifier: ViewModifier {
+/// glass style options for adaptive glass modifier
+enum GlassStyle {
+    case regular
+    case interactive  // bouncy/shimmery on tap (iOS 26 only)
+    case clear        // higher transparency for media-rich backgrounds
+}
+
+struct AdaptiveGlassModifier<S: Shape>: ViewModifier {
+    let style: GlassStyle
+    let shape: S
+    let tint: Color?
+
     func body(content: Content) -> some View {
-        // TODO: when iOS 26 ships, add .glassEffect(.regular) branch
-        content.background(.thinMaterial)
+        if #available(iOS 26.0, *) {
+            content.glassEffect(glassVariant, in: shape)
+        } else {
+            // fallback: material background with shape clip
+            content
+                .background(.thinMaterial, in: shape)
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private var glassVariant: Glass {
+        var glass: Glass
+        switch style {
+        case .regular:
+            glass = .regular
+        case .interactive:
+            glass = .regular.interactive()
+        case .clear:
+            glass = .clear
+        }
+        if let tint {
+            glass = glass.tint(tint)
+        }
+        return glass
     }
 }
 
 extension View {
-    func adaptiveGlass() -> some View {
-        modifier(AdaptiveGlassModifier())
+    /// applies liquid glass on iOS 26+, falls back to thin material on older OS
+    func adaptiveGlass(
+        _ style: GlassStyle = .regular,
+        in shape: some Shape = Capsule(),
+        tint: Color? = nil
+    ) -> some View {
+        modifier(AdaptiveGlassModifier(style: style, shape: shape, tint: tint))
+    }
+
+    /// convenience for circular glass buttons
+    func adaptiveGlassCircle(_ style: GlassStyle = .regular, tint: Color? = nil) -> some View {
+        modifier(AdaptiveGlassModifier(style: style, shape: Circle(), tint: tint))
+    }
+
+    /// convenience for rounded rect glass panels
+    func adaptiveGlassPanel(
+        _ style: GlassStyle = .regular,
+        cornerRadius: CGFloat = AppCornerRadius.large,
+        tint: Color? = nil
+    ) -> some View {
+        modifier(AdaptiveGlassModifier(
+            style: style,
+            shape: RoundedRectangle(cornerRadius: cornerRadius),
+            tint: tint
+        ))
     }
 }

@@ -157,8 +157,7 @@ struct AudioPlayerOverlay: View {
             .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(AppColor.color1)
-        .adaptiveGlass(.interactive, tint: AppColor.primary)
+        .adaptiveGlass(.interactive, tint: AppColor.color5.opacity(0.3))
     }
 
     // MARK: - Downloading Indicator

@@ -44,56 +44,70 @@ struct iPadRootView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // top-right controls - inline buttons instead of collapsed menu
-            HStack(spacing: 10) {
-                if let song = selectedSong {
-                    // favorite toggle
-                    GlassButton(
-                        icon: song.isFavorite ? "star.fill" : "star",
-                        isActive: song.isFavorite
-                    ) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                            song.isFavorite.toggle()
-                            try? song.managedObjectContext?.save()
+            // top toolbar - navigation on left, controls on right
+            HStack {
+                // navigation recall button (left side)
+                if !showPanel {
+                    GlassButton(icon: "line.3.horizontal") {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            showPanel = true
                         }
-                    }
-                    .contentTransition(.symbolEffect(.replace))
-
-                    // toggle audio overlay (only if audio available)
-                    if audioPlayer.audioAvailability == .available {
-                        GlassButton(
-                            icon: showAudioOverlay ? "waveform.circle.fill" : "waveform.circle",
-                            isActive: showAudioOverlay
-                        ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                showAudioOverlay.toggle()
-                            }
-                        }
-                    }
-
-                    // song info
-                    GlassButton(icon: "info.circle") {
-                        showSongControls = true
-                    }
-                    .popover(isPresented: $showSongControls) {
-                        iPadSongControlsMenu(
-                            song: song,
-                            showSettings: $showSettings,
-                            isPresented: $showSongControls,
-                            toggleFavoriteAction: {
-                                withAnimation {
-                                    song.isFavorite.toggle()
-                                    try? song.managedObjectContext?.save()
-                                }
-                            }
-                        )
-                        .environmentObject(audioPlayer)
                     }
                 }
 
-                // settings always visible
-                GlassButton(icon: "gearshape") {
-                    showSettings = true
+                Spacer()
+
+                // right side controls
+                HStack(spacing: 10) {
+                    if let song = selectedSong {
+                        // favorite toggle
+                        GlassButton(
+                            icon: song.isFavorite ? "star.fill" : "star",
+                            isActive: song.isFavorite
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                song.isFavorite.toggle()
+                                try? song.managedObjectContext?.save()
+                            }
+                        }
+                        .contentTransition(.symbolEffect(.replace))
+
+                        // toggle audio overlay (only if audio available)
+                        if audioPlayer.audioAvailability == .available {
+                            GlassButton(
+                                icon: showAudioOverlay ? "music.note" : "music.note.list",
+                                isActive: showAudioOverlay
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    showAudioOverlay.toggle()
+                                }
+                            }
+                        }
+
+                        // song info
+                        GlassButton(icon: "info.circle") {
+                            showSongControls = true
+                        }
+                        .popover(isPresented: $showSongControls) {
+                            iPadSongControlsMenu(
+                                song: song,
+                                showSettings: $showSettings,
+                                isPresented: $showSongControls,
+                                toggleFavoriteAction: {
+                                    withAnimation {
+                                        song.isFavorite.toggle()
+                                        try? song.managedObjectContext?.save()
+                                    }
+                                }
+                            )
+                            .environmentObject(audioPlayer)
+                        }
+                    }
+
+                    // settings always visible
+                    GlassButton(icon: "gearshape") {
+                        showSettings = true
+                    }
                 }
             }
             .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
@@ -113,34 +127,6 @@ struct iPadRootView: View {
                 .zIndex(20)
             }
 
-            // navigation recall button - more visible floating button
-            if !showPanel {
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                        showPanel = true
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Songs")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundStyle(AppColor.primary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .adaptiveGlass(.interactive)
-                    .shadow(color: .black.opacity(0.15), radius: 12, x: 2, y: 4)
-                }
-                .padding(.leading, 20)
-                .padding(.top, 80)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .leading).combined(with: .opacity),
-                    removal: .opacity
-                ))
-                .zIndex(30)
-            }
 
             // floating navigation panel
             if showPanel {
@@ -298,7 +284,6 @@ struct GlassButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(isActive ? AppColor.primary : .primary.opacity(0.7))
                 .frame(width: 40, height: 40)
                 .adaptiveGlassCircle(.interactive)
         }

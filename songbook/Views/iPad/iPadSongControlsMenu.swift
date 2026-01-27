@@ -185,7 +185,7 @@ struct iPadAudioControlSection: View {
             Label("Download Audio", systemImage: "arrow.down.circle")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(AppColor.primary.opacity(0.1))
+                .background(AppColor.color4.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .foregroundStyle(AppColor.primary)

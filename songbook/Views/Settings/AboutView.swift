@@ -61,7 +61,7 @@ struct AboutView: View {
                 Text("""
                     A musical gathering place with 130+ songs inspired by the principles and Writings of the Baháʼí Faith. Each song includes the score, lyrics, chords, guitar diagrams, and an MP3 to listen or play along.
                     
-                    Compiled by Elaine Losey and Beth King-Mock; developed by Robin Losey.
+                    Compiled by Elaine Losey and Beth King-Mock; developed by Robin Losey and Shubh Randeria. App code is open source and free to use as a template.
                     
                     With gratitude to the composers who shared their work. All music remains their copyright and appears here with permission whenever contact was possible.
                     """)

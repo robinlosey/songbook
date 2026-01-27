@@ -15,23 +15,47 @@ struct iOSCategoryListView: View {
 
     var body: some View {
         List {
-            // all songs row
-            NavigationLink {
-                iOSSongListView(viewModel: SongListViewModel())
-            } label: {
-                CategoryRowView(name: "All Songs", count: viewModel.totalSongs)
-            }
-
-            // category rows
-            ForEach(viewModel.categories, id: \.self) { category in
-                NavigationLink {
-                    iOSSongListView(viewModel: SongListViewModel(category: category))
-                } label: {
-                    CategoryRowView(name: category.name, count: viewModel.getSongCount(for: category))
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    AppIconView()
+                        .aspectRatio(1, contentMode: .fit)
+                        .frame(height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                    
+                    Text("On Wings of the Soul")
+                        .font(.system(.largeTitle, design: .serif))
+                        .fontWeight(.medium)
+                        .foregroundStyle(AppColor.primary)
                 }
             }
+            .listRowInsets(EdgeInsets(top:0, leading: 0, bottom: 8, trailing: 0))
+            .listRowBackground(Color.clear)
+
+            // all songs row
+            Section {
+                NavigationLink {
+                    iOSSongListView(viewModel: SongListViewModel())
+                } label: {
+                    CategoryRowView(name: "All Songs", count: viewModel.totalSongs, isAllSongs: true)
+                }
+
+                // category rows
+                ForEach(viewModel.categories, id: \.self) { category in
+                    NavigationLink {
+                        iOSSongListView(viewModel: SongListViewModel(category: category))
+                    } label: {
+                        CategoryRowView(name: category.name, count: viewModel.getSongCount(for: category))
+                    }
+                }
+            }
+            
+            // app icon
+            Section {
+            }
         }
-        .navigationTitle("Categories")
+        .scrollContentBackground(.hidden)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 SyncStatusIndicator(syncManager: syncManager)
@@ -48,6 +72,7 @@ struct iOSCategoryListView: View {
                 viewModel.getTotalSongs()
             }
         }
+        
     }
 }
 
@@ -84,12 +109,12 @@ struct SyncStatusIndicator: View {
                     SyncManager.requestSync()
                 } label: {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(AppColor.color5)
                 }
             } else if showComplete {
                 // briefly show checkmark after sync
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(AppColor.color1)
                     .transition(.opacity)
             }
             // idle: show nothing

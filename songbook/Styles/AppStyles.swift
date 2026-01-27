@@ -59,6 +59,92 @@ enum AppAnimation {
     static let slow = Animation.easeInOut(duration: 0.4)
 }
 
+// MARK: - Color Palette
+
+/// theme colors derived from the app icon (stained glass hibiscus & hummingbird)
+enum AppColor {
+    // primary accent (main brand color)
+    static let accent = Color.accentColor
+
+    // palette inspired by icon - hummingbird teal, indigo wing, soft rose, forest green, crimson flower
+    static let color1 = Color("AccentColor_2") // hummingbird teal - primary accent
+    static let color2 = Color("AccentColor_4") // deep indigo - secondary/buttons
+    static let color3 = Color("AccentColor_3") // soft rose - backgrounds/warmth
+    static let color4 = Color("AccentColor_5") // forest green - tertiary/tags
+    static let color5 = Color("AccentColor")   // deep crimson - destructive only
+
+    // semantic aliases for clarity
+    static let primary = color1
+    static let secondary = color2
+    static let warmAccent = color3
+    static let tertiary = color4
+    static let destructive = color5
+
+    // convenience array for indexed access (excludes destructive)
+    static let palette: [Color] = [color1, color2, color3, color4]
+
+    // helper to get consistent color for a string (like category name)
+    static func forString(_ string: String) -> Color {
+        let hash = abs(string.hashValue)
+        return palette[hash % palette.count]
+    }
+}
+
+// MARK: - App Backgrounds
+
+struct MeshBackground: View {
+    @State private var appear = false
+
+    var body: some View {
+        if #available(iOS 18.0, *) {
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    [0, 0], [0.5, 0], [1, 0],
+                    [0, 0.5], [appear ? 0.55 : 0.45, appear ? 0.45 : 0.55], [1, 0.5],
+                    [0, 1], [0.5, 1], [1, 1]
+                ],
+                colors: [
+                    // soft rose and teal dominate - warm, elegant feel
+                    AppColor.warmAccent.opacity(0.15), AppColor.primary.opacity(0.08), AppColor.warmAccent.opacity(0.12),
+                    AppColor.primary.opacity(0.06), AppColor.warmAccent.opacity(0.10), AppColor.secondary.opacity(0.06),
+                    AppColor.warmAccent.opacity(0.12), AppColor.tertiary.opacity(0.05), AppColor.warmAccent.opacity(0.15)
+                ]
+            )
+            .ignoresSafeArea()
+            .onAppear {
+                withAnimation(.easeInOut(duration: 12.0).repeatForever(autoreverses: true)) {
+                    appear = true
+                }
+            }
+            .blur(radius: 50)
+        } else {
+            // elegant fallback: soft rose gradient reminiscent of icon's flowing background
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        AppColor.warmAccent.opacity(0.12),
+                        AppColor.warmAccent.opacity(0.06),
+                        AppColor.primary.opacity(0.04)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                // subtle radial accent in corner
+                RadialGradient(
+                    colors: [AppColor.primary.opacity(0.08), .clear],
+                    center: .bottomTrailing,
+                    startRadius: 50,
+                    endRadius: 400
+                )
+            }
+            .ignoresSafeArea()
+        }
+    }
+}
+
 // MARK: - Adaptive Glass Modifier (iOS 26 Ready)
 
 struct AdaptiveGlassModifier: ViewModifier {

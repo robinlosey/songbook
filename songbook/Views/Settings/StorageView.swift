@@ -14,28 +14,22 @@ struct StorageView: View {
     var body: some View {
         List {
             // summary section
-            Section {
-                HStack {
-                    Label("Audio Files", systemImage: "waveform")
-                    Spacer()
+            Section("Summary") {
+                LabeledContent {
                     if viewModel.isLoading {
                         ProgressView()
                     } else {
                         Text(viewModel.formattedTotalSize)
-                            .foregroundStyle(.secondary)
                     }
+                } label: {
+                    Text("Total Size")
                 }
 
-                HStack {
-                    Label("Files", systemImage: "doc")
-                    Spacer()
-                    Text("\(viewModel.downloadedFiles.count)")
-                        .foregroundStyle(.secondary)
-                }
+                LabeledContent("Audio Files", value: "\(viewModel.downloadedFiles.count)")
             }
 
             // downloaded files
-            Section {
+            Section("Downloaded Audio") {
                 if viewModel.downloadedFiles.isEmpty {
                     ContentUnavailableView(
                         "No Downloads",
@@ -46,14 +40,16 @@ struct StorageView: View {
                 } else {
                     ForEach(viewModel.downloadedFiles) { file in
                         HStack {
-                            VStack(alignment: .leading) {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(file.title)
                                     .font(AppFont.body)
                                 Text(file.id)
                                     .font(AppFont.caption)
                                     .foregroundStyle(.tertiary)
                             }
+
                             Spacer()
+
                             Text(file.formattedSize)
                                 .font(AppFont.caption)
                                 .foregroundStyle(.secondary)
@@ -61,16 +57,17 @@ struct StorageView: View {
                     }
                     .onDelete { viewModel.deleteFile(at: $0) }
                 }
-            } header: {
-                Text("Downloaded Audio")
             }
 
             // delete all
             if !viewModel.downloadedFiles.isEmpty {
                 Section {
-                    Button("Delete All Audio", role: .destructive) {
+                    Button(role: .destructive) {
                         showDeleteAllConfirmation = true
+                    } label: {
+                        Label("Delete All Audio", systemImage: "trash.fill")
                     }
+                    .tint(AppColor.color3)
                 }
             }
         }

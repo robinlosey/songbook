@@ -34,20 +34,27 @@ struct DownloadSettingsView: View {
                     Text("Audio will only download when you tap the download button on a song.")
                 }
             }
+            .tint(AppColor.color2)
 
             Section {
                 Button {
                     refreshLibrary()
                 } label: {
                     HStack {
-                        Label("Refresh Library", systemImage: "arrow.clockwise")
+                        Text("Refresh Library")
+                            .foregroundStyle(.primary)
+
                         Spacer()
+
                         if isRefreshing {
                             ProgressView()
                         } else if let result = refreshResult {
                             Image(systemName: result == .success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(result == .success ? .green : .red)
+                                .foregroundStyle(result == .success ? AppColor.tertiary : AppColor.destructive)
                                 .transition(.scale.combined(with: .opacity))
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }

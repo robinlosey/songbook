@@ -27,19 +27,31 @@ struct SettingsView: View {
                     NavigationLink {
                         GeneralSettingsView()
                     } label: {
-                        Label("General", systemImage: "gear")
+                        SettingsRow(
+                            icon: "gear",
+                            iconColor: AppColor.color1,
+                            title: "General"
+                        )
                     }
 
                     NavigationLink {
                         DownloadSettingsView()
                     } label: {
-                        Label("Downloads", systemImage: "arrow.down.circle")
+                        SettingsRow(
+                            icon: "arrow.down.circle.fill",
+                            iconColor: AppColor.color2,
+                            title: "Downloads"
+                        )
                     }
 
                     NavigationLink {
                         StorageView()
                     } label: {
-                        Label("Storage", systemImage: "internaldrive")
+                        SettingsRow(
+                            icon: "internaldrive.fill",
+                            iconColor: AppColor.color3,
+                            title: "Storage"
+                        )
                     }
                 }
 
@@ -47,7 +59,11 @@ struct SettingsView: View {
                     NavigationLink {
                         AboutView()
                     } label: {
-                        Label("About", systemImage: "info.circle")
+                        SettingsRow(
+                            icon: "info.circle.fill",
+                            iconColor: AppColor.color4,
+                            title: "About"
+                        )
                     }
                 }
             }
@@ -55,12 +71,35 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                        .tint(AppColor.accent)
                 }
             }
         }
         .presentationDetents(sizeClass == .regular ? [.medium, .large] : [.large])
         .presentationDragIndicator(.visible)
         .preferredColorScheme(colorScheme)
+    }
+}
+
+// MARK: - Settings Row
+
+/// styled settings row with colored icon
+struct SettingsRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(iconColor.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            Text(title)
+        }
     }
 }
 

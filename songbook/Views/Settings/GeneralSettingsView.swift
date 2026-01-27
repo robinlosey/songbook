@@ -16,10 +16,12 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section("Appearance") {
-                Picker("Theme", selection: $appearance) {
+                Picker(selection: $appearance) {
                     Text("System").tag("system")
                     Text("Light").tag("light")
                     Text("Dark").tag("dark")
+                } label: {
+                    Text("Theme")
                 }
             }
 

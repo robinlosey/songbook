@@ -101,6 +101,7 @@ class SongListViewModel: ObservableObject {
         NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: nil)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                self?.dataManager.queryCache.invalidateSongs()
                 self?.fetchSongs()
             }
             .store(in: &cancellables)

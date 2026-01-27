@@ -13,8 +13,14 @@ struct iOSRootView: View {
     @State private var showSettings = false
 
     var body: some View {
-        NavigationStack {
-            iOSCategoryListView(viewModel: viewModel, showSettings: $showSettings)
+        ZStack {
+            MeshBackground()
+
+            NavigationStack {
+                iOSCategoryListView(viewModel: viewModel, showSettings: $showSettings)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+            }
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()

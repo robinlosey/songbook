@@ -76,7 +76,7 @@ struct AudioPlayerOverlay: View {
                         }
                     }
                 )
-                .tint(.accent)
+                .tint(AppColor.color1)
 
                 Button {
                     audioPlayer.toggleRepeat()
@@ -114,7 +114,7 @@ struct AudioPlayerOverlay: View {
                     } label: {
                         Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 44))
-                            .foregroundStyle(.primary, .accent)
+                            .foregroundStyle(.primary, AppColor.color1)
                     }
 
                     Button {
@@ -140,9 +140,17 @@ struct AudioPlayerOverlay: View {
         .clipShape(RoundedRectangle(cornerRadius: AppCornerRadius.extraLarge))
         .overlay(
             RoundedRectangle(cornerRadius: AppCornerRadius.extraLarge)
-                .strokeBorder(Color.accentColor.opacity(0.15), lineWidth: 1)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [AppColor.color1.opacity(0.3), AppColor.color2.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
-        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 10)
+        .shadow(color: AppColor.color1.opacity(0.05), radius: 5, x: 0, y: -2)
     }
 
     // MARK: - Download Button
@@ -162,7 +170,7 @@ struct AudioPlayerOverlay: View {
             .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.accent)
+        .foregroundStyle(AppColor.color1)
         .background(Color.accentColor.opacity(0.1))
         .adaptiveGlass()
         .clipShape(Capsule())

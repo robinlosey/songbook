@@ -11,8 +11,8 @@ struct TagFlowView: View {
     let tags: [Category]
     let maxVisible: Int
     
-    // Using a subtle accent color background
-    private let tagBackgroundColor = Color.accentColor.opacity(0.15)
+    // Using a subtle accent color background (secondary accent)
+    private let tagBackgroundColor = AppColor.color2.opacity(0.15)
     
     init(tags: [Category], maxVisible: Int = 3) {
         self.tags = tags
@@ -26,13 +26,24 @@ struct TagFlowView: View {
         HStack(spacing: 4) {
             ForEach(visibleTags) { tag in
                 Text(tag.name ?? "")
-                    .font(AppFont.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(tagBackgroundColor)
-                    .clipShape(Capsule())
+                    .font(AppFont.caption.weight(.medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background {
+                        Capsule()
+                            .fill(LinearGradient(
+                                colors: [tagBackgroundColor, tagBackgroundColor.opacity(0.5)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                    }
+                    .overlay {
+                        Capsule()
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
+                    }
                     .foregroundStyle(.primary)
                     .lineLimit(1)
+                    .shadow(color: tagBackgroundColor.opacity(0.3), radius: 2, x: 0, y: 1)
             }
 
             if overflow > 0 {

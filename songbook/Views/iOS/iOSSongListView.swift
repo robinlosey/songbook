@@ -44,6 +44,7 @@ struct iOSSongListView: View {
             }
         }
         .navigationTitle(viewModel.category?.name ?? "All Songs")
+        .scrollContentBackground(.hidden)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 12) {
@@ -124,12 +125,12 @@ struct FavoritesFilterButton: View {
         Button(action: action) {
             Image(systemName: isActive ? "star.fill" : "star")
                 .font(.body)
-                .foregroundStyle(isActive ? Color.accentColor : .primary)
+                .foregroundStyle(isActive ? AppColor.color1 : .primary)
                 .padding(8)
                 .background {
                     if isActive {
                         Circle()
-                            .fill(Color.accentColor.opacity(0.15))
+                            .fill(AppColor.color1.opacity(0.15))
                     }
                 }
                 .contentShape(Circle())

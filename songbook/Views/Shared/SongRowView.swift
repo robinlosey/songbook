@@ -24,7 +24,8 @@ struct SongRowView: View {
         HStack(alignment: .top, spacing: AppSpacing.medium) {
             Button(action: toggleFavoriteAction) {
                 Image(systemName: song.isFavorite ? "star.fill" : "star")
-                    .foregroundStyle(song.isFavorite ? Color.accentColor : .secondary)
+                    .foregroundStyle(song.isFavorite ? AppColor.color1 : .secondary)
+                    .shadow(color: song.isFavorite ? AppColor.color1.opacity(0.4) : .clear, radius: 4)
             }
             .buttonStyle(.plain)
             .padding(.top, 2) // Align with title text

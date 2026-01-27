@@ -46,12 +46,13 @@ struct AlphabetIndexView: View {
         HStack {
             Spacer()
             VStack(spacing: 0) {
-                ForEach(Array(keys.enumerated()), id: \.element) { index, key in
+                ForEach(Array(keys.indices), id: \.self) { index in
+                    let key = keys[index]
                     let (scale, offset) = magnificationEffect(for: index)
 
                     Text(key)
                         .font(AppFont.caption.weight(.bold))
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(AppColor.color1)
                         .frame(width: 30, height: rowHeight)
                         .contentShape(Rectangle())
                         .scaleEffect(scale)

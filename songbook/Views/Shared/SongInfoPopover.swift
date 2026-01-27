@@ -29,7 +29,7 @@ struct SongInfoPopover: View {
 
                     if song.isFavorite {
                         Image(systemName: "star.fill")
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(AppColor.color4)
                             .font(AppFont.subheadline)
                     }
                 }
@@ -78,7 +78,6 @@ struct SongInfoPopover: View {
         }
         .padding()
         .frame(minWidth: 280, maxWidth: 320)
-        .presentationCompactAdaptation(.popover)
     }
 }
 

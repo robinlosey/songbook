@@ -17,11 +17,14 @@ struct SongView: View {
     @State private var barsVisible = true
     @State private var showInfoPopover = false
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var isiPad: Bool { sizeClass == .regular }
+
     private var showControls: Bool {
         controlsVisible ?? !hideAudioByDefault
     }
-    
-    // Only show audio toggle if audio is potentially available
+
+    // only show audio toggle if audio is potentially available
     private var showAudioToggle: Bool {
         switch audioPlayer.audioAvailability {
         case .available, .downloadable, .downloading, .unknown:
@@ -33,54 +36,61 @@ struct SongView: View {
     
     var body: some View {
         ZStack {
-            // PDF Viewer (Full Screen)
+            // pdf viewer (full screen)
             PDFViewer(forSong: song.filename ?? "Unknown")
                 .ignoresSafeArea(.all)
                 .onTapGesture {
-                    withAnimation {
-                        barsVisible.toggle()
+                    if !isiPad {
+                        withAnimation {
+                            barsVisible.toggle()
+                        }
                     }
                 }
             
-            // Audio Controls Overlay
-            if showControls && barsVisible {
+            // audio controls overlay (iPhone only)
+            if !isiPad && showControls && barsVisible {
                 AudioPlayerOverlay(song: song)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 8) {
-                    // Favorite Button
-                    Button(action: toggleFavoriteAction) {
-                        Image(systemName: song.isFavorite ? "star.fill" : "star")
-                            .symbolEffect(.bounce, value: song.isFavorite)
-                    }
-                    
-                    // Audio Controls Toggle
-                    if showAudioToggle {
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                controlsVisible = !showControls
-                            }
-                        } label: {
-                            Image(systemName: showControls ? "music.note" : "music.note.list")
+            if !isiPad {
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 8) {
+                        // favorite button
+                        Button(action: toggleFavoriteAction) {
+                            Image(systemName: song.isFavorite ? "star.fill" : "star")
+                                .symbolEffect(.bounce, value: song.isFavorite)
+                                .foregroundStyle(song.isFavorite ? AppColor.color1 : .primary)
                         }
-                    }
-                    
-                    // Info Button
-                    Button {
-                        showInfoPopover = true
-                    } label: {
-                        Image(systemName: "info.circle")
-                    }
-                    .popover(isPresented: $showInfoPopover) {
-                        SongInfoPopover(song: song)
+                        
+                        // audio controls toggle
+                        if showAudioToggle {
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    controlsVisible = !showControls
+                                }
+                            } label: {
+                                Image(systemName: showControls ? "music.note" : "music.note.list")
+                            }
+                        }
+                        
+                        // info button
+                        Button {
+                            showInfoPopover = true
+                        } label: {
+                            Image(systemName: "info.circle")
+                        }
                     }
                 }
             }
         }
         .toolbar(barsVisible ? .visible : .hidden, for: .navigationBar)
+        .sheet(isPresented: $showInfoPopover) {
+            SongInfoPopover(song: song)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
         .onAppear {
             audioPlayer.setup(song: song)
         }

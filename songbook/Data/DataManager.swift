@@ -15,7 +15,7 @@ import os.log
 final class DataManager: @unchecked Sendable {
     static let shared = DataManager()
     static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "DataManager")
-    static let bundledCSVVersion: Int = 20250719001
+    static let bundledCSVVersion: Int = 20260208001
 
     private let storeA: URL
     private let storeB: URL
@@ -57,7 +57,7 @@ final class DataManager: @unchecked Sendable {
 
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        let configPath = "config"
+        let configPath = "config_test"
         guard let path = Bundle.main.path(forResource: configPath, ofType: "plist") else {
             fatalError("Could not find config at \(configPath).plist")
         }

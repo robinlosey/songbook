@@ -287,6 +287,11 @@ actor SongSyncService {
         if let encoded = try? JSONEncoder().encode(status) {
             UserDefaults.standard.set(encoded, forKey: SyncKeys.lastSyncStatus)
         }
+
+        // track last successful update separately
+        if result == .success {
+            UserDefaults.standard.set(Date(), forKey: SyncKeys.lastUpdatedTimestamp)
+        }
     }
 
     // MARK: - Status Access

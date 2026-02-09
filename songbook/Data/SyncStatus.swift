@@ -48,6 +48,7 @@ enum SyncKeys {
     static let buildInProgress = "buildInProgress"       // crash recovery flag
     static let lastSyncStatus = "lastSyncStatus"         // JSON-encoded SyncStatus
     static let storedCSVVersion = "storedCSVVersion"     // version of current DB
+    static let lastUpdatedTimestamp = "lastUpdatedTimestamp" // date of last successful update
 }
 
 // notification posted after A/B database swap completes

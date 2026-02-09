@@ -103,3 +103,7 @@ iOSInjectionProject/
 # Claude and Cursor directories
 .claude/
 .cursor/
+
+audio/
+
+pdfs/

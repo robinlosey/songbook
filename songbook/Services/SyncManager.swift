@@ -81,5 +81,15 @@ final class SyncManager: @unchecked Sendable {
     var currentVersion: Int {
         UserDefaults.standard.integer(forKey: SyncKeys.storedCSVVersion)
     }
+
+    /// when the library was last checked (any sync attempt)
+    var lastCheckedDate: Date? {
+        lastSyncStatus?.timestamp
+    }
+
+    /// when the library was last actually updated
+    var lastUpdatedDate: Date? {
+        UserDefaults.standard.object(forKey: SyncKeys.lastUpdatedTimestamp) as? Date
+    }
 }
 

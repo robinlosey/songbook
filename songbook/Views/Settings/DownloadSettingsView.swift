@@ -60,7 +60,17 @@ struct DownloadSettingsView: View {
                 }
                 .disabled(isRefreshing)
             } footer: {
-                Text("Check for updates to the song library.")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Check for updates to the song library.")
+
+                    if let checked = syncManager.lastCheckedDate {
+                        Text("Last checked: \(checked.formatted(date: .abbreviated, time: .shortened))")
+                    }
+
+                    if let updated = syncManager.lastUpdatedDate {
+                        Text("Last updated: \(updated.formatted(date: .abbreviated, time: .shortened))")
+                    }
+                }
             }
         }
         .navigationTitle("Downloads")

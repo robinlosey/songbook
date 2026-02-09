@@ -82,13 +82,23 @@ struct AboutView: View {
             Section("Library") {
                 LabeledContent("Data Version", value: "\(syncManager.currentVersion)")
 
-                if let status = syncManager.lastSyncStatus {
+                if let checked = syncManager.lastCheckedDate {
                     LabeledContent {
-                        Text(status.timestamp.formatted(date: .abbreviated, time: .shortened))
+                        Text(checked.formatted(date: .abbreviated, time: .shortened))
                     } label: {
-                        Text("Last Sync")
+                        Text("Last Checked")
                     }
+                }
 
+                if let updated = syncManager.lastUpdatedDate {
+                    LabeledContent {
+                        Text(updated.formatted(date: .abbreviated, time: .shortened))
+                    } label: {
+                        Text("Last Updated")
+                    }
+                }
+
+                if let status = syncManager.lastSyncStatus {
                     LabeledContent {
                         HStack(spacing: 4) {
                             Image(systemName: statusIcon(for: status.result))

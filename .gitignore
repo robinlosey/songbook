@@ -99,3 +99,11 @@ iOSInjectionProject/
 **/xcshareddata/WorkspaceSettings.xcsettings
 
 # End of https://www.toptal.com/developers/gitignore/api/xcode,swift
+
+# Claude and Cursor directories
+.claude/
+.cursor/
+
+audio/
+
+pdfs/

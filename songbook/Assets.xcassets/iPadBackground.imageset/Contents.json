@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "iPadBackground.jpeg",
+      "idiom" : "ipad"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

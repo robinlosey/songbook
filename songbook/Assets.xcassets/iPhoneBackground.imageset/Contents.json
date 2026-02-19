@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "iOS Wallpaper.png",
+      "idiom" : "iphone"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

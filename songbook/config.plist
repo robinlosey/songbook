@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>baseAudioURL</key>
+	<string>https://www.losey.net/songbookapp/audio/</string>
+	<key>basePDFURL</key>
+	<string>https://www.losey.net/songbookapp/ScoresPDFwide/</string>
+	<key>csvVersionURL</key>
+	<string>https://www.losey.net/songbookapp/version.txt</string>
+	<key>csvDownloadURL</key>
+	<string>https://www.losey.net/songbookapp/IndicesCSV.csv</string>
+</dict>
+</plist>

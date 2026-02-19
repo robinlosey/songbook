@@ -12,7 +12,7 @@ struct PDFViewer: UIViewRepresentable {
     let forSong: String
     
     func makeUIView(context: Context) -> UIView {
-        guard let url = Bundle.main.url(forResource: forSong, withExtension: "pdf") else {
+        guard let url = DataManager.getSongPDF(for: forSong) else {
             let label = UILabel()
             label.text = "Error retrieving PDF for \(forSong)"
             label.textAlignment = .center
@@ -27,7 +27,7 @@ struct PDFViewer: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
-        guard let url = Bundle.main.url(forResource: forSong, withExtension: "pdf"),
+        guard let url = DataManager.getSongPDF(for: forSong),
               let pdfView = uiView as? PDFView else {
             return
         }

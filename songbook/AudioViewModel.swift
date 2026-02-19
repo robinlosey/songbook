@@ -9,9 +9,12 @@ import Foundation
 import AVFoundation
 import Combine
 import MediaPlayer
+import os.log
 
 @MainActor
 class AudioPlayerViewModel: ObservableObject {
+
+    static let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "AudioPlayerViewModel")
 
     enum RepeatMode {
         case off
@@ -29,21 +32,35 @@ class AudioPlayerViewModel: ObservableObject {
     enum AudioPlayerError: Error, LocalizedError {
         case fileNotFound(String)
         case emptyFileName
+        case noAudioAvailable
         
         var errorDescription: String? {
             switch self {
             case .fileNotFound(let filename):
-                return "Audio file '\(filename).mp3' not found in application bundle."
+                return "Audio file '\(filename).mp3' not found."
             case .emptyFileName:
                 return "Song has an empty filename."
+            case .noAudioAvailable:
+                return "No audio available for this song."
             }
         }
+    }
+    
+    // tracks MP3 availability for current song
+    enum AudioAvailability: Equatable {
+        case available
+        case downloadable
+        case downloading
+        case notFound
+        case unknown
     }
 
     @Published private(set) var playbackState: PlaybackState = .stopped
     @Published private(set) var currentTime: TimeInterval = 0
     @Published private(set) var duration: TimeInterval = 0
     @Published private(set) var repeatMode: RepeatMode = .off
+    @Published private(set) var audioAvailability: AudioAvailability = .unknown
+    
     var timeLeft: TimeInterval {
         max(0, duration - currentTime)
     }
@@ -52,6 +69,7 @@ class AudioPlayerViewModel: ObservableObject {
     private var timeObserverToken: Any?
     private var cancellables = Set<AnyCancellable>()
     private var artwork: MPMediaItemArtwork?
+    private var isAudioSessionConfigured = false
 
     var currentSong: Song? {
         switch playbackState {
@@ -70,7 +88,6 @@ class AudioPlayerViewModel: ObservableObject {
     }
 
     init() {
-        configureAudioSession()
         setupRemoteTransportControls()
         setupArtwork()
     }
@@ -92,30 +109,81 @@ class AudioPlayerViewModel: ObservableObject {
         }
     }
     
-    // set the song up, so starting playback is quick
+    // sets up the song for playback, checking MP3 availability
     func setup(song: Song) {
         stop()
+        audioAvailability = .unknown
 
         guard let filename = song.filename, !filename.isEmpty else {
             playbackState = .failed(error: .emptyFileName)
+            audioAvailability = .notFound
             return
         }
 
-        guard let url = Bundle.main.url(forResource: filename, withExtension: "mp3") else {
-            playbackState = .failed(error: .fileNotFound(filename))
+        // check if MP3 is available locally
+        if let url = DataManager.getSongMP3(for: filename) {
+            audioAvailability = .available
+            let playerItem = AVPlayerItem(url: url)
+            player = AVPlayer(playerItem: playerItem)
+            playbackState = .setup(song: song)
+            setupObservers(for: playerItem)
             return
         }
         
-        let playerItem = AVPlayerItem(url: url)
-        player = AVPlayer(playerItem: playerItem)
+        // MP3 not local - check availability async
+        AudioPlayerViewModel.logger.info("MP3 not local for \(song.title ?? "Unknown"), checking availability")
+        playbackState = .stopped
         
-        playbackState = .setup(song: song)
-
-        setupObservers(for: playerItem)
+        Task {
+            let availability = await DownloadService.shared.checkMP3Availability(for: filename)
+            await MainActor.run {
+                switch availability {
+                case .available(let url):
+                    self.audioAvailability = .available
+                    let playerItem = AVPlayerItem(url: url)
+                    self.player = AVPlayer(playerItem: playerItem)
+                    self.playbackState = .setup(song: song)
+                    self.setupObservers(for: playerItem)
+                case .downloadable:
+                    self.audioAvailability = .downloadable
+                case .notFound, .checking:
+                    self.audioAvailability = .notFound
+                }
+            }
+        }
+    }
+    
+    // downloads and sets up MP3 for current song
+    func downloadAndSetup(song: Song) async {
+        guard let filename = song.filename, !filename.isEmpty else { return }
+        
+        await MainActor.run {
+            audioAvailability = .downloading
+        }
+        
+        let success = await DownloadService.shared.downloadMP3(for: filename)
+        
+        if success {
+            await MainActor.run {
+                setup(song: song)
+            }
+        } else {
+            await MainActor.run {
+                audioAvailability = .notFound
+            }
+        }
     }
     
     func play() {
-        guard player != nil else { return }
+        guard player != nil else { 
+            AudioPlayerViewModel.logger.error("Player is nil")
+            return
+        }
+        
+        if !isAudioSessionConfigured {
+            configureAudioSession()
+            isAudioSessionConfigured = true
+        }
         
         switch playbackState {
         case .setup(let song), .paused(let song):
@@ -140,7 +208,10 @@ class AudioPlayerViewModel: ObservableObject {
 
     
     func togglePlayPause() {
-        guard player != nil else { return }
+        guard player != nil else {
+            AudioPlayerViewModel.logger.error("Player is nil")
+            return
+        }
 
         switch playbackState {
         case .playing:
@@ -168,6 +239,7 @@ class AudioPlayerViewModel: ObservableObject {
         }
         player = nil
         playbackState = .stopped
+        audioAvailability = .unknown
         currentTime = 0
         duration = 0
         cancellables.forEach { $0.cancel() }
@@ -198,7 +270,7 @@ class AudioPlayerViewModel: ObservableObject {
             try session.setCategory(.playback, mode: .default, options: [.allowAirPlay])
             try session.setActive(true)
         } catch {
-            print("Failed to set up audio session: \(error.localizedDescription)")
+            AudioPlayerViewModel.logger.error("Failed to set up audio session: \(error.localizedDescription)")
         }
     }
 

@@ -10,19 +10,26 @@ import AVFoundation
 
 @main
 struct songbookApp: App {
-    let dataManager = DataManager.shared
-    @StateObject var audioPlayer = AudioPlayerViewModel()
-
+    @State private var syncManager = SyncManager.shared
+    @StateObject private var audioPlayer = AudioPlayerViewModel()
+    
     init() {
-        // Load songs from CSV when the app initializes, if they haven't been loaded already.
-        dataManager.loadSongsFromCSVIfNeeded()
+        // start network monitoring early
+        NetworkMonitor.shared.start()
+        
+        // ensure database is populated from bundled CSV before UI appears
+        DataManager.shared.ensureInitialDatabase()
     }
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView(viewModel: CategoryListViewModel())
-                .environment(\.managedObjectContext, dataManager.container.viewContext)
+                .environment(\.managedObjectContext, DataManager.shared.container.viewContext)
+                .environment(syncManager)
                 .environmentObject(audioPlayer)
+                .task {
+                    await syncManager.sync()
+                }
         }
     }
 }
